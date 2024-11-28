@@ -2,41 +2,30 @@
 
 import {
   Box,
-  Flex,
-  Text,
-  useColorModeValue,
   Container,
   SimpleGrid,
   Stat,
   StatLabel,
   StatNumber,
   StatHelpText,
-  Button,
-  Icon,
-  Stack,
-  HStack,
+  useColorModeValue,
   VStack,
-  Avatar,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Divider,
-  useToast,
+  Heading,
+  Badge,
+  Progress,
   Table,
   Thead,
   Tbody,
   Tr,
   Th,
   Td,
-  Badge,
-  Progress,
-  Heading,
+  Text,
+  FiUsers,
+  FiDollarSign,
+  FiShoppingBag,
+  FiActivity,
 } from '@chakra-ui/react';
-import { FiUsers, FiDollarSign, FiShoppingBag, FiActivity, FiLogOut, FiBell, FiSettings, FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
 import { motion } from 'framer-motion';
-import ThemeToggle from '@/components/shared/ThemeToggle';
-import { useRouter } from 'next/navigation';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -91,40 +80,30 @@ function StatCard({ title, stat, icon, helpText, trend, percentage }: StatCardPr
         borderColor={useColorModeValue('gray.200', 'gray.700')}
         rounded="xl"
       >
-        <Flex justifyContent="space-between">
-          <Box pl={2}>
-            <StatLabel fontWeight="medium" isTruncated>
-              {title}
-            </StatLabel>
-            <StatNumber fontSize="2xl" fontWeight="bold">
-              {stat}
-            </StatNumber>
-            <HStack spacing={2}>
-              <Icon 
-                as={trend === 'up' ? FiTrendingUp : FiTrendingDown} 
-                color={trend === 'up' ? 'green.500' : 'red.500'}
-              />
-              <StatHelpText 
-                color={trend === 'up' ? 'green.500' : 'red.500'}
-                fontWeight="bold"
-              >
-                {percentage}
-              </StatHelpText>
+        <Box pl={2}>
+          <StatLabel fontWeight="medium" isTruncated>
+            {title}
+          </StatLabel>
+          <StatNumber fontSize="2xl" fontWeight="bold">
+            {stat}
+          </StatNumber>
+          {(trend || percentage) && (
+            <StatHelpText 
+              color={trend === 'up' ? 'green.500' : 'red.500'}
+              display="flex"
+              alignItems="center"
+              gap={1}
+            >
+              {trend === 'up' ? <FiTrendingUp /> : <FiTrendingDown />}
+              {percentage}
               {helpText && (
-                <StatHelpText color={useColorModeValue('gray.600', 'gray.400')}>
+                <Box as="span" color={useColorModeValue('gray.600', 'gray.400')}>
                   {helpText}
-                </StatHelpText>
+                </Box>
               )}
-            </HStack>
-          </Box>
-          <Box
-            my="auto"
-            color={useColorModeValue('purple.600', 'purple.200')}
-            alignContent="center"
-          >
-            <Icon as={icon} w={8} h={8} />
-          </Box>
-        </Flex>
+            </StatHelpText>
+          )}
+        </Box>
       </Stat>
     </MotionBox>
   );
@@ -166,164 +145,154 @@ const recentTransactions = [
   { id: 4, user: 'Sarah Wilson', amount: '150,75 €', status: 'failed', date: '18.01.2024' },
 ];
 
+const transactions = [
+  { id: 1, user: 'Thomas Müller', amount: '250,00 €', status: 'completed', date: '20.01.2024' },
+  { id: 2, user: 'Anna Schmidt', amount: '180,50 €', status: 'pending', date: '19.01.2024' },
+  { id: 3, user: 'Michael Weber', amount: '420,00 €', status: 'completed', date: '18.01.2024' },
+  { id: 4, user: 'Sophie Wagner', amount: '150,75 €', status: 'failed', date: '18.01.2024' },
+];
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return 'green';
+    case 'pending':
+      return 'yellow';
+    case 'failed':
+      return 'red';
+    default:
+      return 'gray';
+  }
+};
+
+const getStatusText = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return 'Abgeschlossen';
+    case 'pending':
+      return 'In Bearbeitung';
+    case 'failed':
+      return 'Fehlgeschlagen';
+    default:
+      return status;
+  }
+};
+
 export default function DashboardPage() {
-  const router = useRouter();
-  const toast = useToast();
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const cardBg = useColorModeValue('white', 'gray.800');
-
-  const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        toast({
-          title: translations.dashboard.logout,
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-        router.push('/login');
-      } else {
-        toast({
-          title: 'Logout fehlgeschlagen',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
+  const textColor = useColorModeValue('gray.900', 'white');
+  const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
+  const headingColor = useColorModeValue('gray.900', 'white');
+  const statBg = useColorModeValue('gray.50', 'gray.700');
 
   return (
     <Box minH="100vh" bg={bgColor}>
-      {/* Navbar */}
-      <Flex
-        as="nav"
-        align="center"
-        justify="space-between"
-        py={4}
-        px={8}
-        bg={useColorModeValue('white', 'gray.800')}
-        borderBottom="1px"
-        borderColor={borderColor}
-        shadow="sm"
-      >
-        <HStack spacing={8}>
-          <Text 
-            fontSize="2xl" 
-            fontWeight="bold" 
-            bgGradient="linear(to-r, purple.500, pink.500)" 
-            bgClip="text"
-          >
-            Gastropay
-          </Text>
-        </HStack>
-
-        <HStack spacing={4}>
-          <ThemeToggle />
-          <Menu>
-            <MenuButton
-              as={Button}
-              variant="ghost"
-              size="md"
-              aria-label={translations.dashboard.notifications}
-              position="relative"
-            >
-              <Icon as={FiBell} />
-              <Box
-                position="absolute"
-                top="-1px"
-                right="-1px"
-                px={2}
-                py={1}
-                fontSize="xs"
-                fontWeight="bold"
-                lineHeight="none"
-                color="white"
-                transform="translate(50%,-50%)"
-                bg="red.500"
-                rounded="full"
-              >
-                3
-              </Box>
-            </MenuButton>
-            <MenuList>
-              <MenuItem>{translations.dashboard.newOrder} #123</MenuItem>
-              <MenuItem>{translations.dashboard.paymentReceived}</MenuItem>
-              <MenuItem>{translations.dashboard.systemUpdate}</MenuItem>
-            </MenuList>
-          </Menu>
-          <Menu>
-            <MenuButton
-              as={Button}
-              rounded="full"
-              variant="link"
-              cursor="pointer"
-              minW={0}
-            >
-              <Avatar 
-                size="sm" 
-                src="https://bit.ly/dan-abramov"
-                name="Admin User"
-              />
-            </MenuButton>
-            <MenuList>
-              <MenuItem icon={<FiSettings />}>{translations.dashboard.settings}</MenuItem>
-              <Divider />
-              <MenuItem icon={<FiLogOut />} onClick={handleLogout}>
-                {translations.dashboard.logout}
-              </MenuItem>
-            </MenuList>
-          </Menu>
-        </HStack>
-      </Flex>
-
       {/* Main Content */}
       <Container maxW="container.xl" py={8}>
         <VStack spacing={8} align="stretch">
           {/* Stats Grid */}
           <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
-            <StatCard
-              title={translations.dashboard.totalUsers}
-              stat="4.000"
-              icon={FiUsers}
-              trend="up"
-              percentage="+21%"
-              helpText={translations.dashboard.vsLastMonth}
-            />
-            <StatCard
-              title={translations.dashboard.revenue}
-              stat="34.890 €"
-              icon={FiDollarSign}
-              trend="up"
-              percentage="+15%"
-              helpText={translations.dashboard.vsLastMonth}
-            />
-            <StatCard
-              title={translations.dashboard.orders}
-              stat="876"
-              icon={FiShoppingBag}
-              trend="up"
-              percentage="+8%"
-              helpText={translations.dashboard.vsLastMonth}
-            />
-            <StatCard
-              title={translations.dashboard.conversion}
-              stat="3,2%"
-              icon={FiActivity}
-              trend="down"
-              percentage="-2%"
-              helpText={translations.dashboard.vsLastMonth}
-            />
+            <Box
+              p={6}
+              bg={cardBg}
+              borderRadius="xl"
+              boxShadow="sm"
+              border="1px"
+              borderColor={borderColor}
+            >
+              <Stat>
+                <StatLabel color={mutedTextColor} fontSize="sm" fontWeight="medium">
+                  Gesamtbenutzer
+                </StatLabel>
+                <StatNumber color={headingColor} fontSize="2xl" fontWeight="bold" mt={2}>
+                  4.000
+                </StatNumber>
+                <StatHelpText color="green.500" fontWeight="medium">
+                  <Text as="span" color="green.500">+21%</Text>
+                  {' '}
+                  <Text as="span" color={mutedTextColor} fontSize="sm">
+                    vs. letzter Monat
+                  </Text>
+                </StatHelpText>
+              </Stat>
+            </Box>
+
+            <Box
+              p={6}
+              bg={cardBg}
+              borderRadius="xl"
+              boxShadow="sm"
+              border="1px"
+              borderColor={borderColor}
+            >
+              <Stat>
+                <StatLabel color={mutedTextColor} fontSize="sm" fontWeight="medium">
+                  Einnahmen
+                </StatLabel>
+                <StatNumber color={headingColor} fontSize="2xl" fontWeight="bold" mt={2}>
+                  34.890 €
+                </StatNumber>
+                <StatHelpText color="green.500" fontWeight="medium">
+                  <Text as="span" color="green.500">+15%</Text>
+                  {' '}
+                  <Text as="span" color={mutedTextColor} fontSize="sm">
+                    vs. letzter Monat
+                  </Text>
+                </StatHelpText>
+              </Stat>
+            </Box>
+
+            <Box
+              p={6}
+              bg={cardBg}
+              borderRadius="xl"
+              boxShadow="sm"
+              border="1px"
+              borderColor={borderColor}
+            >
+              <Stat>
+                <StatLabel color={mutedTextColor} fontSize="sm" fontWeight="medium">
+                  Bestellungen
+                </StatLabel>
+                <StatNumber color={headingColor} fontSize="2xl" fontWeight="bold" mt={2}>
+                  876
+                </StatNumber>
+                <StatHelpText color="green.500" fontWeight="medium">
+                  <Text as="span" color="green.500">+8%</Text>
+                  {' '}
+                  <Text as="span" color={mutedTextColor} fontSize="sm">
+                    vs. letzter Monat
+                  </Text>
+                </StatHelpText>
+              </Stat>
+            </Box>
+
+            <Box
+              p={6}
+              bg={cardBg}
+              borderRadius="xl"
+              boxShadow="sm"
+              border="1px"
+              borderColor={borderColor}
+            >
+              <Stat>
+                <StatLabel color={mutedTextColor} fontSize="sm" fontWeight="medium">
+                  Konversionsrate
+                </StatLabel>
+                <StatNumber color={headingColor} fontSize="2xl" fontWeight="bold" mt={2}>
+                  3,2%
+                </StatNumber>
+                <StatHelpText color="red.500" fontWeight="medium">
+                  <Text as="span" color="red.500">-2%</Text>
+                  {' '}
+                  <Text as="span" color={mutedTextColor} fontSize="sm">
+                    vs. letzter Monat
+                  </Text>
+                </StatHelpText>
+              </Stat>
+            </Box>
           </SimpleGrid>
 
           {/* Chart and Activity Section */}
@@ -392,31 +361,158 @@ export default function DashboardPage() {
             </Box>
           </SimpleGrid>
 
-          {/* Performance Metrics */}
+          {/* Transactions Table */}
           <Box
             bg={cardBg}
-            p={6}
-            rounded="xl"
-            shadow="xl"
+            borderRadius="xl"
+            boxShadow="sm"
             border="1px"
             borderColor={borderColor}
+            overflow="hidden"
           >
-            <VStack align="stretch" spacing={4}>
-              <Heading size="md">{translations.dashboard.performanceMetrics}</Heading>
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8}>
-                <Box>
-                  <Text mb={2}>{translations.dashboard.customerSatisfaction}</Text>
-                  <Progress value={85} colorScheme="purple" rounded="full" />
-                  <Text mt={2} fontSize="sm" color="gray.500">85% {translations.dashboard.positiveReviews}</Text>
-                </Box>
-                <Box>
-                  <Text mb={2}>{translations.dashboard.orderCompletionRate}</Text>
-                  <Progress value={92} colorScheme="green" rounded="full" />
-                  <Text mt={2} fontSize="sm" color="gray.500">92% {translations.dashboard.successRate}</Text>
-                </Box>
-              </SimpleGrid>
-            </VStack>
+            <Box p={6} borderBottom="1px" borderColor={borderColor}>
+              <Heading size="md" color={headingColor} fontWeight="semibold">
+                Aktuelle Transaktionen
+              </Heading>
+            </Box>
+            <Box>
+              <Table variant="simple">
+                <Thead bg={useColorModeValue('gray.50', 'gray.900')}>
+                  <Tr>
+                    <Th
+                      borderColor={borderColor}
+                      color={mutedTextColor}
+                      fontWeight="medium"
+                      py={4}
+                    >
+                      Benutzer
+                    </Th>
+                    <Th
+                      borderColor={borderColor}
+                      color={mutedTextColor}
+                      fontWeight="medium"
+                      py={4}
+                    >
+                      Betrag
+                    </Th>
+                    <Th
+                      borderColor={borderColor}
+                      color={mutedTextColor}
+                      fontWeight="medium"
+                      py={4}
+                    >
+                      Status
+                    </Th>
+                    <Th
+                      borderColor={borderColor}
+                      color={mutedTextColor}
+                      fontWeight="medium"
+                      py={4}
+                    >
+                      Datum
+                    </Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {transactions.map((transaction) => (
+                    <Tr 
+                      key={transaction.id}
+                      _hover={{ bg: useColorModeValue('gray.50', 'gray.800') }}
+                      transition="background 0.2s"
+                    >
+                      <Td 
+                        borderColor={borderColor}
+                        py={4}
+                      >
+                        <Text color={textColor} fontWeight="medium">
+                          {transaction.user}
+                        </Text>
+                      </Td>
+                      <Td 
+                        borderColor={borderColor}
+                        py={4}
+                      >
+                        <Text color={textColor} fontWeight="medium" fontFamily="var(--font-geist-mono)">
+                          {transaction.amount}
+                        </Text>
+                      </Td>
+                      <Td 
+                        borderColor={borderColor}
+                        py={4}
+                      >
+                        <Badge
+                          colorScheme={getStatusColor(transaction.status)}
+                          px={3}
+                          py={1}
+                          borderRadius="full"
+                          fontSize="sm"
+                          textTransform="none"
+                          fontWeight="medium"
+                        >
+                          {getStatusText(transaction.status)}
+                        </Badge>
+                      </Td>
+                      <Td 
+                        borderColor={borderColor}
+                        py={4}
+                      >
+                        <Text color={mutedTextColor} fontFamily="var(--font-geist-mono)">
+                          {transaction.date}
+                        </Text>
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </Box>
           </Box>
+
+          {/* Performance Metrics */}
+          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+            <Box
+              p={6}
+              bg={cardBg}
+              borderRadius="xl"
+              boxShadow="sm"
+              border="1px"
+              borderColor={borderColor}
+            >
+              <VStack align="stretch" spacing={4}>
+                <Heading size="sm" color={headingColor} fontWeight="semibold">
+                  Kundenzufriedenheit
+                </Heading>
+                <Text color={textColor} fontSize="2xl" fontWeight="bold">
+                  85%
+                </Text>
+                <Progress value={85} colorScheme="green" borderRadius="full" />
+                <Text color={mutedTextColor} fontSize="sm">
+                  Positive Bewertungen
+                </Text>
+              </VStack>
+            </Box>
+
+            <Box
+              p={6}
+              bg={cardBg}
+              borderRadius="xl"
+              boxShadow="sm"
+              border="1px"
+              borderColor={borderColor}
+            >
+              <VStack align="stretch" spacing={4}>
+                <Heading size="sm" color={headingColor} fontWeight="semibold">
+                  Bestellabschlussrate
+                </Heading>
+                <Text color={textColor} fontSize="2xl" fontWeight="bold">
+                  92%
+                </Text>
+                <Progress value={92} colorScheme="brand" borderRadius="full" />
+                <Text color={mutedTextColor} fontSize="sm">
+                  Erfolgsrate
+                </Text>
+              </VStack>
+            </Box>
+          </SimpleGrid>
         </VStack>
       </Container>
     </Box>

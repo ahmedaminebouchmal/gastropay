@@ -14,9 +14,10 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
+  MenuDivider,
   Button,
 } from '@chakra-ui/react';
-import { FiMoreVertical, FiEdit2, FiTrash2, FiFileText } from 'react-icons/fi';
+import { FiStar, FiMoreVertical, FiEdit2, FiTrash2, FiFileText } from 'react-icons/fi';
 
 interface Client {
   id: number;
@@ -31,9 +32,10 @@ interface ClientListProps {
   onEdit?: (client: Client) => void;
   onDelete?: (client: Client) => void;
   onViewInvoices?: (client: Client) => void;
+  onRate?: (client: Client) => void;
 }
 
-export function ClientList({ clients, onEdit, onDelete, onViewInvoices }: ClientListProps) {
+export function ClientList({ clients, onEdit, onDelete, onViewInvoices, onRate }: ClientListProps) {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const hoverBg = useColorModeValue('gray.50', 'gray.700');
 
@@ -73,21 +75,43 @@ export function ClientList({ clients, onEdit, onDelete, onViewInvoices }: Client
                   />
                   <MenuList>
                     <MenuItem
+                      icon={<FiStar />}
+                      onClick={() => onRate?.(client)}
+                      _hover={{
+                        bg: useColorModeValue('yellow.50', 'yellow.900'),
+                        color: useColorModeValue('yellow.500', 'yellow.200'),
+                      }}
+                    >
+                      Bewertung
+                    </MenuItem>
+                    <MenuItem
                       icon={<FiEdit2 />}
                       onClick={() => onEdit?.(client)}
+                      _hover={{
+                        bg: useColorModeValue('purple.50', 'purple.900'),
+                        color: useColorModeValue('purple.500', 'purple.200'),
+                      }}
                     >
                       Bearbeiten
                     </MenuItem>
                     <MenuItem
                       icon={<FiFileText />}
                       onClick={() => onViewInvoices?.(client)}
+                      _hover={{
+                        bg: useColorModeValue('blue.50', 'blue.900'),
+                        color: useColorModeValue('blue.500', 'blue.200'),
+                      }}
                     >
                       Rechnungen anzeigen
                     </MenuItem>
+                    <MenuDivider />
                     <MenuItem
                       icon={<FiTrash2 />}
                       onClick={() => onDelete?.(client)}
-                      color="red.500"
+                      _hover={{
+                        bg: useColorModeValue('red.50', 'red.900'),
+                        color: 'red.500',
+                      }}
                     >
                       Löschen
                     </MenuItem>

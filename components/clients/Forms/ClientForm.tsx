@@ -10,6 +10,13 @@ import {
   FormErrorMessage,
   SimpleGrid,
   useColorModeValue,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
 } from '@chakra-ui/react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -24,16 +31,13 @@ const schema = yup.object().shape({
   vatNumber: yup.string().required('USt-IdNr. ist erforderlich'),
 });
 
-interface ClientFormData {
-  name: string;
-  email: string;
-  address: string;
-  phone: string;
-  company: string;
-  vatNumber: string;
+interface ClientFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: any) => Promise<void>;
 }
 
-export function ClientForm() {
+export function ClientForm({ isOpen, onClose, onSubmit }: ClientFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -44,15 +48,14 @@ export function ClientForm() {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<ClientFormData>({
+  } = useForm({
     resolver: yupResolver(schema),
   });
 
-  const onSubmit = async (data: ClientFormData) => {
+  const handleFormSubmit = async (data: any) => {
     setIsLoading(true);
     try {
-      // TODO: Implement API call to save client
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      await onSubmit(data);
       toast({
         title: 'Kunde erstellt',
         description: 'Der Kunde wurde erfolgreich angelegt.',
@@ -61,6 +64,7 @@ export function ClientForm() {
         isClosable: true,
       });
       reset();
+      onClose();
     } catch (error) {
       toast({
         title: 'Fehler',
@@ -75,65 +79,75 @@ export function ClientForm() {
   };
 
   return (
-    <Box
-      p={6}
-      bg={bgColor}
-      borderRadius="xl"
-      boxShadow="xl"
-      border="1px"
-      borderColor={borderColor}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      isCentered
+      size="4xl"
+      motionPreset="slideInBottom"
     >
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <VStack spacing={6}>
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} w="full">
-            <FormControl isInvalid={!!errors.name}>
-              <FormLabel>Name</FormLabel>
-              <Input {...register('name')} />
-              <FormErrorMessage>{errors.name?.message}</FormErrorMessage>
-            </FormControl>
+      <ModalOverlay backdropFilter="blur(4px)" />
+      <ModalContent mx={4}>
+        <ModalHeader>Neuer Kunde</ModalHeader>
+        <ModalCloseButton />
+        <form onSubmit={handleSubmit(handleFormSubmit)}>
+          <ModalBody pb={6}>
+            <VStack spacing={6}>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} w="full">
+                <FormControl isInvalid={!!errors.name}>
+                  <FormLabel>Name</FormLabel>
+                  <Input {...register('name')} />
+                  <FormErrorMessage>{errors.name?.message}</FormErrorMessage>
+                </FormControl>
 
-            <FormControl isInvalid={!!errors.email}>
-              <FormLabel>E-Mail</FormLabel>
-              <Input {...register('email')} type="email" />
-              <FormErrorMessage>{errors.email?.message}</FormErrorMessage>
-            </FormControl>
+                <FormControl isInvalid={!!errors.email}>
+                  <FormLabel>E-Mail</FormLabel>
+                  <Input {...register('email')} type="email" />
+                  <FormErrorMessage>{errors.email?.message}</FormErrorMessage>
+                </FormControl>
 
-            <FormControl isInvalid={!!errors.phone}>
-              <FormLabel>Telefon</FormLabel>
-              <Input {...register('phone')} />
-              <FormErrorMessage>{errors.phone?.message}</FormErrorMessage>
-            </FormControl>
+                <FormControl isInvalid={!!errors.phone}>
+                  <FormLabel>Telefon</FormLabel>
+                  <Input {...register('phone')} />
+                  <FormErrorMessage>{errors.phone?.message}</FormErrorMessage>
+                </FormControl>
 
-            <FormControl isInvalid={!!errors.company}>
-              <FormLabel>Firma</FormLabel>
-              <Input {...register('company')} />
-              <FormErrorMessage>{errors.company?.message}</FormErrorMessage>
-            </FormControl>
+                <FormControl isInvalid={!!errors.company}>
+                  <FormLabel>Firma</FormLabel>
+                  <Input {...register('company')} />
+                  <FormErrorMessage>{errors.company?.message}</FormErrorMessage>
+                </FormControl>
 
-            <FormControl isInvalid={!!errors.vatNumber}>
-              <FormLabel>USt-IdNr.</FormLabel>
-              <Input {...register('vatNumber')} />
-              <FormErrorMessage>{errors.vatNumber?.message}</FormErrorMessage>
-            </FormControl>
-          </SimpleGrid>
+                <FormControl isInvalid={!!errors.vatNumber}>
+                  <FormLabel>USt-IdNr.</FormLabel>
+                  <Input {...register('vatNumber')} />
+                  <FormErrorMessage>{errors.vatNumber?.message}</FormErrorMessage>
+                </FormControl>
+              </SimpleGrid>
 
-          <FormControl isInvalid={!!errors.address}>
-            <FormLabel>Adresse</FormLabel>
-            <Input {...register('address')} />
-            <FormErrorMessage>{errors.address?.message}</FormErrorMessage>
-          </FormControl>
+              <FormControl isInvalid={!!errors.address}>
+                <FormLabel>Adresse</FormLabel>
+                <Input {...register('address')} />
+                <FormErrorMessage>{errors.address?.message}</FormErrorMessage>
+              </FormControl>
+            </VStack>
+          </ModalBody>
 
-          <Button
-            type="submit"
-            colorScheme="purple"
-            size="lg"
-            w="full"
-            isLoading={isLoading}
-          >
-            Kunde anlegen
-          </Button>
-        </VStack>
-      </form>
-    </Box>
+          <ModalFooter gap={3}>
+            <Button variant="ghost" onClick={onClose}>
+              Abbrechen
+            </Button>
+            <Button
+              type="submit"
+              colorScheme="purple"
+              isLoading={isLoading}
+              loadingText="Wird angelegt..."
+            >
+              Kunde anlegen
+            </Button>
+          </ModalFooter>
+        </form>
+      </ModalContent>
+    </Modal>
   );
 }
