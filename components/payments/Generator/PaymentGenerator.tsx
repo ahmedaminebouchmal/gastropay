@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -28,6 +28,8 @@ import {
 } from '@chakra-ui/react';
 import { QRCode } from '../QRCode/QRCode';
 import { FiDownload, FiRefreshCw, FiCopy } from 'react-icons/fi';
+import { Client } from '@/types';
+import { Schema } from 'mongoose';
 
 interface PaymentData {
   amount: number;
@@ -37,6 +39,11 @@ interface PaymentData {
   recipientName?: string;
   recipientIBAN?: string;
   dueDate?: string;
+  clientId?: string;
+}
+
+function generateReference() {
+  return `REF${Date.now()}${Math.floor(Math.random() * 1000)}`;
 }
 
 export function PaymentGenerator() {
@@ -49,6 +56,8 @@ export function PaymentGenerator() {
     recipientIBAN: '',
     dueDate: new Date().toISOString().split('T')[0],
   });
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [qrCodeData, setQRCodeData] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -57,13 +66,43 @@ export function PaymentGenerator() {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  function generateReference(): string {
-    const date = new Date();
-    const prefix = 'GP';
-    const timestamp = date.getTime().toString().slice(-6);
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `${prefix}${timestamp}${random}`;
-  }
+  // Fetch clients when component mounts
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const response = await fetch('/api/clients');
+      if (!response.ok) {
+        throw new Error('Fehler beim Laden der Kunden');
+      }
+      const data = await response.json();
+      setClients(data);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Kunden konnten nicht geladen werden',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleClientChange = (clientId: string) => {
+    const client = clients.find(c => c._id.toString() === clientId);
+    setSelectedClient(client || null);
+    if (client) {
+      setPaymentData(prev => ({
+        ...prev,
+        clientId: client._id.toString(),
+        recipientName: client.fullName,
+        description: `Rechnung für ${client.fullName}`,
+      }));
+    }
+  };
 
   const handleGeneratePayment = async () => {
     setIsLoading(true);
@@ -235,11 +274,28 @@ export function PaymentGenerator() {
           <Box>
             <VStack spacing={6} align="stretch">
               <FormControl>
-                <FormLabel>Empfänger Name</FormLabel>
+                <FormLabel>Kunde</FormLabel>
+                <Select
+                  placeholder="Kunde auswählen"
+                  value={paymentData.clientId || ''}
+                  onChange={(e) => handleClientChange(e.target.value)}
+                >
+                  {clients.map((client) => (
+                    <option key={client._id.toString()} value={client._id.toString()}>
+                      {client.fullName}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Empfänger</FormLabel>
                 <Input
                   value={paymentData.recipientName}
-                  onChange={(e) => setPaymentData({ ...paymentData, recipientName: e.target.value })}
-                  placeholder="Name des Empfängers..."
+                  onChange={(e) =>
+                    setPaymentData({ ...paymentData, recipientName: e.target.value })
+                  }
+                  placeholder="Name des Empfängers"
                 />
               </FormControl>
 

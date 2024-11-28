@@ -23,18 +23,29 @@ import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 const schema = yup.object().shape({
-  name: yup.string().required('Name ist erforderlich'),
+  fullName: yup.string().required('Name ist erforderlich'),
   email: yup.string().email('Ungültige E-Mail').required('E-Mail ist erforderlich'),
+  phoneNumber: yup
+    .string()
+    .required('Telefonnummer ist erforderlich')
+    .min(7, 'Telefonnummer muss mindestens 7 Zeichen lang sein')
+    .matches(/^[0-9+\-\s()]*$/, 'Telefonnummer darf nur Zahlen, +, -, () und Leerzeichen enthalten'),
   address: yup.string().required('Adresse ist erforderlich'),
-  phone: yup.string().required('Telefonnummer ist erforderlich'),
-  company: yup.string().required('Firma ist erforderlich'),
-  vatNumber: yup.string().required('USt-IdNr. ist erforderlich'),
+  company: yup.string(),
 });
+
+interface ClientFormData {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  address: string;
+  company?: string;
+}
 
 interface ClientFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: ClientFormData) => Promise<void>;
 }
 
 export function ClientForm({ isOpen, onClose, onSubmit }: ClientFormProps) {
@@ -52,7 +63,7 @@ export function ClientForm({ isOpen, onClose, onSubmit }: ClientFormProps) {
     resolver: yupResolver(schema),
   });
 
-  const handleFormSubmit = async (data: any) => {
+  const handleFormSubmit = async (data: ClientFormData) => {
     setIsLoading(true);
     try {
       await onSubmit(data);
@@ -66,6 +77,7 @@ export function ClientForm({ isOpen, onClose, onSubmit }: ClientFormProps) {
       reset();
       onClose();
     } catch (error) {
+      console.error('Error submitting form:', error);
       toast({
         title: 'Fehler',
         description: 'Der Kunde konnte nicht angelegt werden.',
@@ -94,10 +106,10 @@ export function ClientForm({ isOpen, onClose, onSubmit }: ClientFormProps) {
           <ModalBody pb={6}>
             <VStack spacing={6}>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} w="full">
-                <FormControl isInvalid={!!errors.name}>
+                <FormControl isInvalid={!!errors.fullName}>
                   <FormLabel>Name</FormLabel>
-                  <Input {...register('name')} />
-                  <FormErrorMessage>{errors.name?.message}</FormErrorMessage>
+                  <Input {...register('fullName')} />
+                  <FormErrorMessage>{errors.fullName?.message}</FormErrorMessage>
                 </FormControl>
 
                 <FormControl isInvalid={!!errors.email}>
@@ -106,22 +118,16 @@ export function ClientForm({ isOpen, onClose, onSubmit }: ClientFormProps) {
                   <FormErrorMessage>{errors.email?.message}</FormErrorMessage>
                 </FormControl>
 
-                <FormControl isInvalid={!!errors.phone}>
+                <FormControl isInvalid={!!errors.phoneNumber}>
                   <FormLabel>Telefon</FormLabel>
-                  <Input {...register('phone')} />
-                  <FormErrorMessage>{errors.phone?.message}</FormErrorMessage>
+                  <Input {...register('phoneNumber')} />
+                  <FormErrorMessage>{errors.phoneNumber?.message}</FormErrorMessage>
                 </FormControl>
 
                 <FormControl isInvalid={!!errors.company}>
-                  <FormLabel>Firma</FormLabel>
+                  <FormLabel>Firma (Optional)</FormLabel>
                   <Input {...register('company')} />
                   <FormErrorMessage>{errors.company?.message}</FormErrorMessage>
-                </FormControl>
-
-                <FormControl isInvalid={!!errors.vatNumber}>
-                  <FormLabel>USt-IdNr.</FormLabel>
-                  <Input {...register('vatNumber')} />
-                  <FormErrorMessage>{errors.vatNumber?.message}</FormErrorMessage>
                 </FormControl>
               </SimpleGrid>
 

@@ -15,6 +15,8 @@ if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env');
 }
 
+console.log('MongoDB URI configured:', MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@')); // Hide credentials in logs
+
 let cached = (global.mongoose as MongooseCache) || { conn: null, promise: null };
 
 if (!global.mongoose) {
@@ -23,6 +25,7 @@ if (!global.mongoose) {
 
 async function connectDB() {
   if (cached.conn) {
+    console.log('Using cached MongoDB connection');
     return cached.conn;
   }
 
@@ -31,12 +34,17 @@ async function connectDB() {
       bufferCommands: false,
     };
 
+    console.log('Creating new MongoDB connection...');
     cached.promise = mongoose.connect(MONGODB_URI, opts);
   }
+  
   try {
+    console.log('Waiting for MongoDB connection...');
     cached.conn = await cached.promise;
+    console.log('MongoDB connection established successfully');
     return cached.conn;
   } catch (e) {
+    console.error('Error connecting to MongoDB:', e);
     cached.promise = null;
     throw e;
   }

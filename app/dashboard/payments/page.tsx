@@ -32,7 +32,7 @@ import {
 } from '@chakra-ui/react';
 import { FiPlus, FiFilter, FiMoreVertical, FiDownload, FiEye, FiTrash2 } from 'react-icons/fi';
 import { PaymentGenerator } from '@/components/payments/Generator/PaymentGenerator';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Payment, PaymentStatus } from '@/types';
 
 export default function PaymentsPage() {
@@ -41,8 +41,28 @@ export default function PaymentsPage() {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [payments, setPayments] = useState<Payment[]>([]); // Will be populated with real data
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        const response = await fetch('/api/payments');
+        if (!response.ok) {
+          throw new Error('Failed to fetch payments');
+        }
+        const data = await response.json();
+        setPayments(data);
+      } catch (error) {
+        console.error('Error fetching payments:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPayments();
+  }, []);
 
   const getStatusColor = (status: PaymentStatus) => {
     switch (status) {
@@ -127,7 +147,13 @@ export default function PaymentsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {payments.length === 0 ? (
+                        {loading ? (
+                          <tr>
+                            <td colSpan={6} style={{ padding: '24px', textAlign: 'center' }}>
+                              <Text color="gray.500">Lade Zahlungen...</Text>
+                            </td>
+                          </tr>
+                        ) : payments.length === 0 ? (
                           <tr>
                             <td colSpan={6} style={{ padding: '24px', textAlign: 'center' }}>
                               <Text color="gray.500">Keine Zahlungen vorhanden</Text>
