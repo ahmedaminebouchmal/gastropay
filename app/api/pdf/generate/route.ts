@@ -40,13 +40,20 @@ export async function POST(req: Request) {
     doc.setFillColor(primaryColor);
     doc.rect(0, 0, 210, 40, 'F');
     
-    // Add white text for header
+    // Add white text for header with enhanced GastroPay styling
     doc.setTextColor('#ffffff');
-    doc.setFontSize(28);
-    doc.text('Gastropay', 105, 20, { align: 'center' });
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(34);
+    doc.text('GastroPay', 105, 22, { align: 'center' });
+    
+    // Reset font for disclaimer
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.text('HAFTUNGSAUSSCHLUSS: Dieses Projekt wurde von Ahmed Amine Bouchmal als Demonstrationsprojekt entwickelt,', 105, 30, { align: 'center' });
-    doc.text('um technische Fähigkeiten zu zeigen. Es steht in keiner Verbindung zur Gastropay GmbH oder deren Dienstleistungen.', 105, 35, { align: 'center' });
+    doc.text('um technische Fähigkeiten zu zeigen. Es steht in keiner Verbindung zur GastroPay GmbH oder deren Dienstleistungen.', 105, 35, { align: 'center' });
+    
+    // Set font for Zahlungsbestätigung
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.text('Zahlungsbestätigung', 105, 50, { align: 'center' });
 
@@ -146,9 +153,10 @@ export async function POST(req: Request) {
 
     // Add system generation text with adjusted position
     yPos += qrSize + 7; 
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(secondaryColor);
-    doc.text('Diese Zahlung wurde über das Gastropay System generiert.', 105, yPos, { align: 'center' });
+    doc.text('Diese Zahlung wurde über das GastroPay System generiert.', 105, yPos, { align: 'center' });
 
     // Add current date closer to the text
     yPos += 5; 

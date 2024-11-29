@@ -53,14 +53,30 @@ export async function POST(request: Request): Promise<NextResponse> {
     console.log('Received payment data:', data);
 
     // Validate required fields
-    if (!data.amount || !data.currency || !data.clientId || !data.dueDate || !data.reference) {
+    const requiredFields = ['amount', 'currency', 'clientId', 'dueDate', 'reference'];
+    const missingFields = requiredFields.filter(field => !data[field]);
+    
+    if (missingFields.length > 0) {
+      console.error('Missing required fields:', missingFields);
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: `Missing required fields: ${missingFields.join(', ')}` },
         { status: 400 }
       );
     }
 
     // Create payment
+    console.log('Creating payment with data:', {
+      amount: data.amount,
+      currency: data.currency,
+      clientId: data.clientId,
+      status: data.status,
+      dueDate: data.dueDate,
+      reference: data.reference,
+      description: data.description,
+      recipientName: data.recipientName,
+      recipientIBAN: data.recipientIBAN,
+    });
+
     const payment = await PaymentModel.create({
       amount: data.amount,
       currency: data.currency,

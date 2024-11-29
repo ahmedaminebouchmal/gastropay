@@ -29,6 +29,7 @@ import {
 import { QRCode } from '../QRCode/QRCode';
 import { FiDownload, FiRefreshCw, FiCopy } from 'react-icons/fi';
 import { Client } from '@/types';
+import { PaymentStatus } from '@/types';
 
 interface PaymentData {
   amount: number;
@@ -128,6 +129,52 @@ export function PaymentGenerator() {
   const handleGeneratePayment = async () => {
     setIsLoading(true);
     try {
+      if (!paymentData.amount || paymentData.amount <= 0) {
+        toast({
+          title: 'Error',
+          description: 'Please enter a valid amount.',
+          status: 'warning',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      if (!selectedClient) {
+        toast({
+          title: 'Error',
+          description: 'Please select a client.',
+          status: 'warning',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Save payment to MongoDB first
+      const savePaymentResponse = await fetch('/api/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: Number(paymentData.amount),
+          currency: paymentData.currency,
+          description: paymentData.description,
+          reference: paymentData.reference,
+          recipientName: paymentData.recipientName || selectedClient.fullName,
+          recipientIBAN: paymentData.recipientIBAN,
+          dueDate: paymentData.dueDate,
+          clientId: selectedClient._id,
+          status: PaymentStatus.PENDING
+        }),
+      });
+
+      if (!savePaymentResponse.ok) {
+        const errorData = await savePaymentResponse.json();
+        throw new Error(errorData.error || 'Failed to save payment');
+      }
+
       // Generate payment data string for QR code
       const paymentString = JSON.stringify({
         ...paymentData,
@@ -138,15 +185,16 @@ export function PaymentGenerator() {
       
       toast({
         title: 'Payment generated',
-        description: 'QR code was successfully created.',
+        description: 'Payment saved and QR code created successfully.',
         status: 'success',
         duration: 3000,
         isClosable: true,
       });
     } catch (error) {
+      console.error('Error generating payment:', error);
       toast({
         title: 'Error',
-        description: 'Payment could not be generated.',
+        description: error.message || 'Payment could not be generated.',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -168,19 +216,21 @@ export function PaymentGenerator() {
       return;
     }
 
-    if (!paymentData.amount || paymentData.amount <= 0) {
-      toast({
-        title: 'Error',
-        description: 'Please enter a valid amount.',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
     setIsGeneratingPDF(true);
     try {
+      console.log('Payment Data being sent:', {
+        amount: Number(paymentData.amount),
+        currency: paymentData.currency,
+        description: paymentData.description,
+        reference: paymentData.reference,
+        recipientName: paymentData.recipientName,
+        recipientIBAN: paymentData.recipientIBAN,
+        dueDate: paymentData.dueDate,
+        clientId: selectedClient?._id,
+        status: 'pending'
+      });
+
+      // Then generate the PDF
       const response = await fetch('/api/pdf/generate', {
         method: 'POST',
         headers: {
@@ -190,7 +240,7 @@ export function PaymentGenerator() {
           paymentData: {
             ...paymentData,
             amount: Number(paymentData.amount) || 0,
-            clientId: selectedClient || undefined
+            clientId: selectedClient?._id
           },
           qrCodeData,
         }),
@@ -198,31 +248,49 @@ export function PaymentGenerator() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.details || 'PDF could not be created');
+        throw new Error(errorData.error || 'PDF could not be created');
       }
 
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Gastropay_Payment_${paymentData.reference || 'QR'}.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
-      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `payment-${paymentData.reference}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
       toast({
-        title: 'PDF created',
-        description: 'The PDF was successfully downloaded.',
+        title: 'Success',
+        description: 'Payment saved and PDF downloaded successfully.',
         status: 'success',
         duration: 3000,
         isClosable: true,
       });
+
+      // Reset the form after successful save
+      setPaymentData({
+        amount: 0,
+        currency: 'EUR',
+        description: '',
+        reference: generateReference(),
+        recipientName: '',
+        recipientIBAN: '',
+        dueDate: new Date().toISOString().split('T')[0],
+        clientId: '',
+        client: undefined
+      });
+      setSelectedClient(null);
+      setQRCodeData('');
+
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('Error details:', error);
       toast({
         title: 'Error',
-        description: error.message || 'PDF could not be created.',
+        description: error.message || 'Failed to process payment',
         status: 'error',
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
     } finally {
