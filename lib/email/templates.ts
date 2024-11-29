@@ -32,7 +32,8 @@ export const generatePaymentTemplate = (data: PaymentEmailData, isUpdate: boolea
             border-radius: 4px; 
             margin: 20px 0;
           }
-          .footer { margin-top: 30px; font-size: 12px; color: #666; }
+          .footer { margin-top: 30px; font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 20px; }
+          .disclaimer { margin-top: 20px; font-size: 11px; color: #888; }
           .update-badge {
             background-color: #f6ad55;
             color: white;
@@ -42,41 +43,58 @@ export const generatePaymentTemplate = (data: PaymentEmailData, isUpdate: boolea
             margin-bottom: 20px;
             display: inline-block;
           }
+          .logo { margin-bottom: 20px; }
+          .info-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+          }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>${isUpdate ? 'Payment Update' : 'Payment Request'}</h1>
-            ${isUpdate ? '<span class="update-badge">Updated Payment Information</span>' : ''}
+            <h1>${isUpdate ? 'Zahlungsaktualisierung' : 'Zahlungsaufforderung'}</h1>
+            ${isUpdate ? '<span class="update-badge">Aktualisierte Zahlungsinformationen</span>' : ''}
           </div>
           
-          <p>Dear ${data.clientName},</p>
+          <p>Sehr geehrte(r) ${data.clientName},</p>
           
           <p>${isUpdate 
-            ? 'Your payment request has been updated with the following details:' 
-            : 'A new payment request has been created for you with the following details:'}</p>
+            ? 'Ihre Zahlungsaufforderung wurde mit den folgenden Details aktualisiert:' 
+            : 'Eine neue Zahlungsaufforderung wurde für Sie mit den folgenden Details erstellt:'}</p>
           
-          <ul>
-            <li><strong>Amount:</strong> <span class="amount">${formattedAmount}</span></li>
-            <li><strong>Reference:</strong> ${data.reference}</li>
-            ${data.description ? `<li><strong>Description:</strong> ${data.description}</li>` : ''}
-            ${formattedDueDate ? `<li><strong>Due Date:</strong> ${formattedDueDate}</li>` : ''}
-          </ul>
+          <div class="info-box">
+            <ul style="list-style: none; padding: 0; margin: 0;">
+              <li><strong>Betrag:</strong> <span class="amount">${formattedAmount}</span></li>
+              <li><strong>Referenz:</strong> ${data.reference}</li>
+              ${data.description ? `<li><strong>Beschreibung:</strong> ${data.description}</li>` : ''}
+              ${formattedDueDate ? `<li><strong>Fälligkeitsdatum:</strong> ${formattedDueDate}</li>` : ''}
+            </ul>
+          </div>
           
-          <p>To complete your payment, please click the button below:</p>
+          <p>Um Ihre Zahlung abzuschließen, klicken Sie bitte auf den folgenden Button:</p>
           
-          <a href="${data.paymentLink}" class="button">Pay Now</a>
+          <a href="${data.paymentLink}" class="button">Jetzt bezahlen</a>
           
-          <p>Or copy and paste this link into your browser:</p>
-          <p>${data.paymentLink}</p>
+          <p>Oder kopieren Sie diesen Link in Ihren Browser:</p>
+          <p style="word-break: break-all;">${data.paymentLink}</p>
           
           <div class="footer">
             ${isUpdate 
-              ? '<p>This is an update to your previous payment request. The new payment link above replaces any previous links.</p>' 
+              ? '<p>Dies ist eine Aktualisierung Ihrer vorherigen Zahlungsaufforderung. Der neue Zahlungslink ersetzt alle vorherigen Links.</p>' 
               : ''}
-            <p>If you have any questions, please don't hesitate to contact us.</p>
-            <p>This is an automated message, please do not reply directly to this email.</p>
+            <p>Bei Fragen stehen wir Ihnen gerne zur Verfügung.</p>
+            <p>Dies ist eine automatisch generierte E-Mail. Bitte antworten Sie nicht direkt auf diese Nachricht.</p>
+            
+            <div class="disclaimer">
+              <p><strong>Rechtlicher Hinweis:</strong></p>
+              <p>Diese E-Mail und alle Anhänge sind vertraulich und ausschließlich für den/die genannten Empfänger bestimmt. Wenn Sie nicht der vorgesehene Empfänger sind, informieren Sie bitte den Absender und löschen Sie diese E-Mail. Jede unbefugte Weitergabe oder Kopie dieser E-Mail ist untersagt.</p>
+              <p>Die Sicherheit der Datenübertragung per E-Mail kann nicht garantiert werden. Die in dieser E-Mail enthaltenen Informationen können daher Irrtümer oder Fehler enthalten. Eine Haftung, die sich aus der Nutzung dieser Informationen ergibt, wird ausgeschlossen.</p>
+              <p>Alle Preise verstehen sich inklusive der gesetzlichen Mehrwertsteuer, sofern nicht anders angegeben.</p>
+            </div>
           </div>
         </div>
       </body>
@@ -84,32 +102,41 @@ export const generatePaymentTemplate = (data: PaymentEmailData, isUpdate: boolea
   `;
 
   const text = `
-${isUpdate ? 'Payment Update' : 'Payment Request'}
-${isUpdate ? '[Updated Payment Information]' : ''}
+${isUpdate ? 'Zahlungsaktualisierung' : 'Zahlungsaufforderung'}
+${isUpdate ? '[Aktualisierte Zahlungsinformationen]' : ''}
 
-Dear ${data.clientName},
+Sehr geehrte(r) ${data.clientName},
 
 ${isUpdate 
-  ? 'Your payment request has been updated with the following details:' 
-  : 'A new payment request has been created for you with the following details:'}
+  ? 'Ihre Zahlungsaufforderung wurde mit den folgenden Details aktualisiert:' 
+  : 'Eine neue Zahlungsaufforderung wurde für Sie mit den folgenden Details erstellt:'}
 
-Amount: ${formattedAmount}
-Reference: ${data.reference}
-${data.description ? `Description: ${data.description}` : ''}
-${formattedDueDate ? `Due Date: ${formattedDueDate}` : ''}
+Betrag: ${formattedAmount}
+Referenz: ${data.reference}
+${data.description ? `Beschreibung: ${data.description}` : ''}
+${formattedDueDate ? `Fälligkeitsdatum: ${formattedDueDate}` : ''}
 
-To complete your payment, please visit:
+Um Ihre Zahlung abzuschließen, besuchen Sie bitte:
 ${data.paymentLink}
 
-${isUpdate ? 'This is an update to your previous payment request. The new payment link above replaces any previous links.' : ''}
+${isUpdate 
+  ? 'Dies ist eine Aktualisierung Ihrer vorherigen Zahlungsaufforderung. Der neue Zahlungslink ersetzt alle vorherigen Links.'
+  : ''}
 
-If you have any questions, please don't hesitate to contact us.
+Bei Fragen stehen wir Ihnen gerne zur Verfügung.
 
-This is an automated message, please do not reply directly to this email.
+Dies ist eine automatisch generierte E-Mail. Bitte antworten Sie nicht direkt auf diese Nachricht.
+
+Rechtlicher Hinweis:
+Diese E-Mail und alle Anhänge sind vertraulich und ausschließlich für den/die genannten Empfänger bestimmt. Wenn Sie nicht der vorgesehene Empfänger sind, informieren Sie bitte den Absender und löschen Sie diese E-Mail. Jede unbefugte Weitergabe oder Kopie dieser E-Mail ist untersagt.
+
+Die Sicherheit der Datenübertragung per E-Mail kann nicht garantiert werden. Die in dieser E-Mail enthaltenen Informationen können daher Irrtümer oder Fehler enthalten. Eine Haftung, die sich aus der Nutzung dieser Informationen ergibt, wird ausgeschlossen.
+
+Alle Preise verstehen sich inklusive der gesetzlichen Mehrwertsteuer, sofern nicht anders angegeben.
   `;
 
   return {
-    subject: isUpdate ? `Payment Update - ${data.reference}` : `Payment Request - ${data.reference}`,
+    subject: isUpdate ? 'Zahlungsaktualisierung' : 'Neue Zahlungsaufforderung',
     html,
     text,
   };

@@ -42,6 +42,7 @@ import { PaymentGenerator } from '@/components/payments/Generator/PaymentGenerat
 import { useState, useEffect } from 'react';
 import { Payment, PaymentStatus } from '@/types/payment';
 import { Client } from '@/types/client';
+import { PaymentList } from '@/components/payments/List/PaymentList';
 
 export default function PaymentsPage() {
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -52,23 +53,21 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [paymentToDelete, setPaymentToDelete] = useState<Payment | null>(null);
   const toast = useToast();
 
   const fetchPayments = async () => {
     try {
       const response = await fetch('/api/payments');
       if (!response.ok) {
-        throw new Error('Failed to fetch payments');
+        throw new Error('Fehler beim Laden der Zahlungen');
       }
       const data = await response.json();
       setPayments(data);
     } catch (error) {
       console.error('Error fetching payments:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to fetch payments',
+        title: 'Fehler',
+        description: 'Fehler beim Laden der Zahlungen',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -82,37 +81,24 @@ export default function PaymentsPage() {
     fetchPayments();
   }, []);
 
-  const getStatusColor = (status: PaymentStatus) => {
-    switch (status) {
-      case PaymentStatus.PAID:
-        return 'green';
-      case PaymentStatus.PENDING:
-        return 'yellow';
-      case PaymentStatus.CONFIRMED:
-        return 'blue';
-      case PaymentStatus.DECLINED:
-        return 'red';
-      default:
-        return 'gray';
-    }
-  };
-
   const handleGeneratePDF = async (payment: Payment) => {
     try {
-      // Create Stripe checkout session first
+      // 1. Get Stripe checkout URL
       const stripeResponse = await fetch('/api/stripe/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ reference: payment.reference }),
       });
 
       if (!stripeResponse.ok) {
-        throw new Error('Failed to create Stripe checkout session');
+        throw new Error('Fehler beim Erstellen der Zahlungssitzung');
       }
 
       const { url: stripeUrl } = await stripeResponse.json();
 
-      // Generate PDF with Stripe URL
+      // 2. Generate PDF with payment info and Stripe URL
       const response = await fetch('/api/pdf/generate', {
         method: 'POST',
         headers: {
@@ -129,34 +115,23 @@ export default function PaymentsPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || 'Failed to generate PDF');
+        throw new Error('Fehler beim Generieren des PDFs');
       }
 
-      // Create a blob from the PDF stream
       const blob = await response.blob();
-      // Create a link to download the PDF
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `payment-${payment.reference || 'unknown'}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `payment-${payment.reference}.pdf`;
+      document.body.appendChild(a);
+      a.click();
       window.URL.revokeObjectURL(url);
-
-      toast({
-        title: 'Success',
-        description: 'PDF generated and downloaded successfully',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
+      document.body.removeChild(a);
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to generate PDF',
+        title: 'Fehler',
+        description: 'Fehler beim Generieren des PDFs',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -164,16 +139,9 @@ export default function PaymentsPage() {
     }
   };
 
-  const handleDeleteClick = (payment: Payment) => {
-    setPaymentToDelete(payment);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!paymentToDelete) return;
-
+  const handleDeletePayment = async (payment: Payment) => {
     try {
-      const response = await fetch(`/api/payments/${paymentToDelete._id}`, {
+      const response = await fetch(`/api/payments/${payment._id}`, {
         method: 'DELETE',
       });
 
@@ -181,230 +149,140 @@ export default function PaymentsPage() {
         throw new Error('Failed to delete payment');
       }
 
+      // Remove the payment from the list
+      setPayments(payments.filter((p) => p._id !== payment._id));
       toast({
-        title: 'Erfolg',
-        description: 'Zahlung wurde erfolgreich gelöscht',
+        title: 'Zahlung gelöscht',
         status: 'success',
-        duration: 5000,
+        duration: 3000,
         isClosable: true,
       });
-
-      // Refresh payments list
-      fetchPayments();
     } catch (error) {
       console.error('Error deleting payment:', error);
       toast({
+        title: 'Fehler beim Löschen der Zahlung',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleEditPayment = (payment: Payment) => {
+    setSelectedPayment(payment);
+    onOpen();
+  };
+
+  const handlePaymentCreated = async () => {
+    try {
+      const response = await fetch('/api/payments');
+      const data = await response.json();
+      setPayments(data);
+      onClose();
+      toast({
+        title: 'Zahlung aktualisiert',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+      toast({
+        title: 'Fehler beim Aktualisieren der Zahlungen',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleStripeCheckout = async (payment: Payment) => {
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reference: payment.reference }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Fehler beim Erstellen der Zahlungssitzung');
+      }
+
+      const { url } = await response.json();
+      if (url) {
+        window.location.href = url;
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      toast({
         title: 'Fehler',
-        description: 'Zahlung konnte nicht gelöscht werden',
+        description: 'Fehler beim Erstellen der Zahlungssitzung',
         status: 'error',
         duration: 5000,
         isClosable: true,
       });
-    } finally {
-      setIsDeleteDialogOpen(false);
-      setPaymentToDelete(null);
     }
-  };
-
-  const handleOpenModal = (payment?: Payment) => {
-    setSelectedPayment(payment || null);
-    onOpen();
-  };
-
-  const handleCloseModal = () => {
-    setSelectedPayment(null);
-    onClose();
-  };
-
-  const handleEditPayment = (payment: Payment) => {
-    handleOpenModal(payment);
   };
 
   return (
     <Box minH="100vh" bg={bgColor} pt={8} pb={8}>
-      <Container maxW="container.xl">
+      <Container maxW="container.xl" py={8}>
         <VStack spacing={8} align="stretch">
-          {/* Header with navigation */}
-          <Flex align="center" wrap="wrap" gap={4}>
+          <Flex justify="space-between" align="center">
             <Heading size="lg">Zahlungen</Heading>
-            <Spacer />
-            <HStack spacing={4}>
-              <Button
-                leftIcon={<FiFilter />}
-                variant="outline"
-                colorScheme="purple"
-              >
-                Filter
-              </Button>
-              <Button
-                leftIcon={<FiPlus />}
-                colorScheme="purple"
-                onClick={() => handleOpenModal()}
-              >
-                Neue Zahlung
-              </Button>
-            </HStack>
+            <Button
+              leftIcon={<FiPlus />}
+              colorScheme="purple"
+              onClick={onOpen}
+            >
+              Neue Zahlung
+            </Button>
           </Flex>
 
-          {/* Payment list */}
           {loading ? (
-            <Text>Loading...</Text>
+            <Box textAlign="center" py={8}>
+              <Text color="gray.500">Lade Zahlungen...</Text>
+            </Box>
           ) : (
-            <VStack spacing={4} align="stretch">
-              {payments.map((payment) => (
-                <Box
-                  key={payment._id.toString()}
-                  p={4}
-                  bg={cardBg}
-                  borderRadius="lg"
-                  borderWidth="1px"
-                  borderColor={borderColor}
-                  boxShadow="sm"
-                  _hover={{ boxShadow: 'md' }}
-                  transition="all 0.2s"
-                >
-                  <Flex align="center" gap={4}>
-                    {/* Payment Info */}
-                    <VStack align="start" flex={1} spacing={2}>
-                      <HStack spacing={3}>
-                        <Text fontWeight="bold">{payment.reference}</Text>
-                        <Badge
-                          colorScheme={
-                            payment.status === PaymentStatus.PAID
-                              ? 'green'
-                              : payment.status === PaymentStatus.PENDING
-                              ? 'yellow'
-                              : 'red'
-                          }
-                        >
-                          {payment.status}
-                        </Badge>
-                      </HStack>
-                      
-                      {/* Client Info */}
-                      {payment.clientId && typeof payment.clientId === 'object' && '_id' in payment.clientId && (
-                        <VStack align="start" spacing={1}>
-                          <HStack spacing={2}>
-                            <Text 
-                              fontSize="sm" 
-                              fontWeight="medium" 
-                              color={useColorModeValue('gray.700', 'gray.200')}
-                            >
-                              {payment.clientId.fullName}
-                            </Text>
-                            {payment.clientId.company && (
-                              <>
-                                <Text fontSize="sm" color={useColorModeValue('gray.500', 'gray.400')}>•</Text>
-                                <Text 
-                                  fontSize="sm" 
-                                  fontWeight="medium"
-                                  color={useColorModeValue('gray.700', 'gray.200')}
-                                >
-                                  {payment.clientId.company}
-                                </Text>
-                              </>
-                            )}
-                          </HStack>
-                          {payment.clientId.address && (
-                            <Text fontSize="sm" color={useColorModeValue('gray.500', 'gray.400')}>
-                              {payment.clientId.address}
-                            </Text>
-                          )}
-                          {payment.clientId.email && (
-                            <Text fontSize="sm" color={useColorModeValue('gray.500', 'gray.400')}>
-                              {payment.clientId.email}
-                            </Text>
-                          )}
-                        </VStack>
-                      )}
-                      
-                      {/* Payment Amount */}
-                      <Text fontSize="sm" fontWeight="medium">
-                        {new Intl.NumberFormat('de-DE', {
-                          style: 'currency',
-                          currency: payment.currency || 'EUR'
-                        }).format(Number(payment.amount))}
-                      </Text>
-                    </VStack>
-
-                    {/* Actions */}
-                    <HStack spacing={2}>
-                      <IconButton
-                        aria-label="View payment"
-                        icon={<FiEye />}
-                        size="sm"
-                        variant="ghost"
-                        colorScheme="purple"
-                        onClick={() => handleGeneratePDF(payment)}
-                      />
-                      <IconButton
-                        aria-label="Edit payment"
-                        icon={<FiEdit2 />}
-                        size="sm"
-                        variant="ghost"
-                        colorScheme="purple"
-                        onClick={() => handleEditPayment(payment)}
-                      />
-                      <IconButton
-                        aria-label="Delete payment"
-                        icon={<FiTrash2 />}
-                        size="sm"
-                        variant="ghost"
-                        colorScheme="red"
-                        onClick={() => handleDeleteClick(payment)}
-                      />
-                    </HStack>
-                  </Flex>
-                </Box>
-              ))}
-            </VStack>
+            <PaymentList
+              payments={payments}
+              onEdit={handleEditPayment}
+              onDelete={handleDeletePayment}
+              onDownload={handleGeneratePDF}
+              onStripeCheckout={handleStripeCheckout}
+            />
           )}
         </VStack>
       </Container>
 
-      {/* Payment Generator Modal */}
-      <Modal isOpen={isOpen} onClose={handleCloseModal} size="xl">
+      <Modal
+        isOpen={isOpen || !!selectedPayment}
+        onClose={() => {
+          onClose();
+          setSelectedPayment(null);
+        }}
+        size="xl"
+      >
         <ModalOverlay />
         <ModalContent maxW="800px">
-          <ModalHeader>{selectedPayment ? 'Zahlung bearbeiten' : 'Neue Zahlung'}</ModalHeader>
+          <ModalHeader>
+            {selectedPayment ? 'Zahlung bearbeiten' : 'Neue Zahlung'}
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
-            <PaymentGenerator 
-              onClose={handleCloseModal}
-              onPaymentCreated={fetchPayments}
+            <PaymentGenerator
+              onClose={() => {
+                onClose();
+                setSelectedPayment(null);
+              }}
+              onPaymentCreated={handlePaymentCreated}
               payment={selectedPayment}
             />
           </ModalBody>
         </ModalContent>
       </Modal>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        isOpen={isDeleteDialogOpen}
-        leastDestructiveRef={undefined}
-        onClose={() => setIsDeleteDialogOpen(false)}
-      >
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Zahlung löschen
-            </AlertDialogHeader>
-
-            <AlertDialogBody>
-              Sind Sie sicher? Diese Aktion kann nicht rückgängig gemacht werden.
-            </AlertDialogBody>
-
-            <AlertDialogFooter>
-              <Button onClick={() => setIsDeleteDialogOpen(false)}>
-                Abbrechen
-              </Button>
-              <Button colorScheme="red" onClick={handleDeleteConfirm} ml={3}>
-                Löschen
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
     </Box>
   );
 }

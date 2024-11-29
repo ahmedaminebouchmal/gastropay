@@ -4,213 +4,148 @@ import { PaymentModel } from '@/lib/models';
 import type { Payment as PaymentType } from '@/types';
 
 // Get all payments or a specific payment
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(request: globalThis.Request): Promise<NextResponse> {
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    console.log('----------------------------------------');
+    console.log('GET /api/payments - Starting fetch process');
+    console.log('Request URL:', request.url);
 
-    console.log('Attempting to connect to MongoDB...');
+    const url = new URL(request.url);
+    const id = url.searchParams.get('id');
+    console.log('Query parameters:', {
+      id: id || 'not provided'
+    });
+
+    console.log('Connecting to MongoDB...');
     await dbConnect();
-    console.log('Successfully connected to MongoDB');
+    console.log('MongoDB connection successful');
 
+    let payment;
     if (id) {
-      // Get specific payment
-      const payment = await PaymentModel.findById(id).populate('clientId');
+      console.log(`Fetching specific payment with ID: ${id}`);
+      payment = await PaymentModel.findById(id).populate({
+        path: 'clientId',
+        select: '_id email fullName name company address'
+      });
+      
       if (!payment) {
+        console.error(`Payment with ID ${id} not found`);
         return NextResponse.json(
           { error: 'Payment not found' },
           { status: 404 }
         );
       }
-      return NextResponse.json(payment);
+      console.log('Successfully fetched payment:', {
+        id: payment._id,
+        amount: payment.amount,
+        status: payment.status
+      });
+    } else {
+      console.log('Fetching all payments...');
+      payment = await PaymentModel.find()
+        .populate({
+          path: 'clientId',
+          select: '_id email fullName name company address'
+        })
+        .sort({ createdAt: -1 });
+      console.log(`Successfully fetched ${payment.length} payments`);
     }
 
-    // Get all payments
-    const payments = await PaymentModel.find({})
-      .populate('clientId')
-      .sort({ createdAt: -1 });
-    console.log(`Found ${payments.length} payments`);
-    return NextResponse.json(payments);
+    console.log('----------------------------------------');
+    return NextResponse.json(payment);
   } catch (error) {
+    console.error('----------------------------------------');
     console.error('Error in GET /api/payments:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    console.error('----------------------------------------');
     return NextResponse.json(
-      { error: 'Failed to fetch payments' },
+      { error: 'Failed to fetch payments', details: error.message },
       { status: 500 }
     );
   }
 }
 
 // Create new payment
-export async function POST(request: Request): Promise<NextResponse> {
+export async function POST(request: globalThis.Request): Promise<NextResponse> {
   try {
+    console.log('----------------------------------------');
     console.log('POST /api/payments - Starting payment creation process');
+    console.log('Request URL:', request.url);
 
-    console.log('Attempting to connect to MongoDB...');
+    console.log('Connecting to MongoDB...');
     await dbConnect();
-    console.log('Successfully connected to MongoDB');
+    console.log('MongoDB connection successful');
 
     const data = await request.json();
-    console.log('Received payment data:', data);
+    console.log('Received payment data:', {
+      amount: data.amount,
+      currency: data.currency,
+      clientId: data.clientId,
+      status: data.status,
+      dueDate: data.dueDate,
+      reference: data.reference,
+      description: data.description,
+      recipientName: data.recipientName,
+      recipientIBAN: data.recipientIBAN,
+    });
 
     // Validate required fields
     const requiredFields = ['amount', 'currency', 'clientId', 'dueDate', 'reference'];
     const missingFields = requiredFields.filter(field => !data[field]);
     
     if (missingFields.length > 0) {
-      console.error('Missing required fields:', missingFields);
+      console.error('Validation failed - Missing required fields:', missingFields);
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(', ')}` },
         { status: 400 }
       );
     }
+    console.log('All required fields present');
 
-    // Create payment
-    console.log('Creating payment with data:', {
-      amount: data.amount,
-      currency: data.currency,
-      clientId: data.clientId,
-      status: data.status,
-      dueDate: data.dueDate,
-      reference: data.reference,
-      description: data.description,
-      recipientName: data.recipientName,
-      recipientIBAN: data.recipientIBAN,
+    console.log('Creating new payment in database...');
+    const payment = await PaymentModel.create(data);
+    const populatedPayment = await payment.populate({
+      path: 'clientId',
+      select: '_id email fullName name company address'
     });
 
-    const payment = await PaymentModel.create({
-      amount: data.amount,
-      currency: data.currency,
-      clientId: data.clientId,
-      status: data.status,
-      dueDate: data.dueDate,
-      reference: data.reference,
-      description: data.description,
-      recipientName: data.recipientName,
-      recipientIBAN: data.recipientIBAN,
+    console.log('Payment successfully created:', {
+      id: populatedPayment._id,
+      amount: populatedPayment.amount,
+      currency: populatedPayment.currency,
+      status: populatedPayment.status,
+      clientId: populatedPayment.clientId,
+      dueDate: populatedPayment.dueDate,
+      reference: populatedPayment.reference,
+      description: populatedPayment.description,
+      recipientName: populatedPayment.recipientName,
+      recipientIBAN: populatedPayment.recipientIBAN,
     });
+    console.log('----------------------------------------');
 
-    // Populate client information
-    const populatedPayment = await payment.populate('clientId');
-
-    console.log('Successfully created payment:', populatedPayment);
     return NextResponse.json(populatedPayment, { status: 201 });
   } catch (error) {
+    console.error('----------------------------------------');
     console.error('Error in POST /api/payments:', error);
-
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    console.error('----------------------------------------');
     if (error.code === 11000) {
       return NextResponse.json(
-        { error: 'Payment reference already exists' },
+        { error: 'A payment with this reference already exists' },
         { status: 409 }
       );
     }
 
     return NextResponse.json(
       { error: 'Failed to create payment', details: error.message },
-      { status: 500 }
-    );
-  }
-}
-
-// Update payment
-export async function PUT(request: Request): Promise<NextResponse> {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Payment ID is required' },
-        { status: 400 }
-      );
-    }
-
-    console.log('Attempting to connect to MongoDB...');
-    await dbConnect();
-    console.log('Successfully connected to MongoDB');
-
-    const data = await request.json();
-    console.log('Received update data:', data);
-
-    // Validate required fields
-    if (!data.amount || !data.currency || !data.clientId || !data.dueDate || !data.reference) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    const updatedPayment = await PaymentModel.findByIdAndUpdate(
-      id,
-      {
-        amount: data.amount,
-        currency: data.currency,
-        clientId: data.clientId,
-        status: data.status,
-        dueDate: data.dueDate,
-        reference: data.reference,
-        description: data.description,
-        recipientName: data.recipientName,
-        recipientIBAN: data.recipientIBAN,
-      },
-      { new: true, runValidators: true }
-    ).populate('clientId');
-
-    if (!updatedPayment) {
-      return NextResponse.json(
-        { error: 'Payment not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(updatedPayment);
-  } catch (error) {
-    console.error('Error in PUT /api/payments:', error);
-
-    if (error.code === 11000) {
-      return NextResponse.json(
-        { error: 'Payment reference already exists' },
-        { status: 409 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to update payment' },
-      { status: 500 }
-    );
-  }
-}
-
-// Delete payment
-export async function DELETE(request: Request): Promise<NextResponse> {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Payment ID is required' },
-        { status: 400 }
-      );
-    }
-
-    console.log('Attempting to connect to MongoDB...');
-    await dbConnect();
-    console.log('Successfully connected to MongoDB');
-
-    const payment = await PaymentModel.findByIdAndDelete(id);
-
-    if (!payment) {
-      return NextResponse.json(
-        { error: 'Payment not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ message: 'Payment deleted successfully' });
-  } catch (error) {
-    console.error('Error in DELETE /api/payments:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete payment' },
       { status: 500 }
     );
   }
