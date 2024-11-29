@@ -29,7 +29,6 @@ import {
 import { QRCode } from '../QRCode/QRCode';
 import { FiDownload, FiRefreshCw, FiCopy } from 'react-icons/fi';
 import { Client } from '@/types';
-import { Schema } from 'mongoose';
 
 interface PaymentData {
   amount: number;
@@ -40,6 +39,7 @@ interface PaymentData {
   recipientIBAN?: string;
   dueDate?: string;
   clientId?: string;
+  client?: Client;
 }
 
 function generateReference() {
@@ -47,6 +47,12 @@ function generateReference() {
 }
 
 export function PaymentGenerator() {
+  // Initialize all hooks at the top level
+  const toast = useToast();
+  const bgColor = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  // State hooks
   const [paymentData, setPaymentData] = useState<PaymentData>({
     amount: 0,
     currency: 'EUR',
@@ -55,53 +61,68 @@ export function PaymentGenerator() {
     recipientName: '',
     recipientIBAN: '',
     dueDate: new Date().toISOString().split('T')[0],
+    clientId: '',
+    client: undefined
   });
+
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [qrCodeData, setQRCodeData] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const toast = useToast();
 
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-
-  // Fetch clients when component mounts
+  // Effects
   useEffect(() => {
-    fetchClients();
-  }, []);
-
-  const fetchClients = async () => {
-    try {
-      const response = await fetch('/api/clients');
-      if (!response.ok) {
-        throw new Error('Fehler beim Laden der Kunden');
+    const fetchClients = async () => {
+      try {
+        const response = await fetch('/api/clients');
+        if (!response.ok) throw new Error('Failed to fetch clients');
+        const data = await response.json();
+        setClients(data);
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch clients',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
       }
-      const data = await response.json();
-      setClients(data);
-    } catch (error) {
-      console.error('Error fetching clients:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Kunden konnten nicht geladen werden',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  };
+    };
+    fetchClients();
+  }, [toast]);
 
+  // Handle client selection
   const handleClientChange = (clientId: string) => {
     const client = clients.find(c => c._id.toString() === clientId);
     setSelectedClient(client || null);
+    
     if (client) {
       setPaymentData(prev => ({
         ...prev,
-        clientId: client._id.toString(),
+        clientId,
+        client,
         recipientName: client.fullName,
-        description: `Rechnung für ${client.fullName}`,
+        description: client.company 
+          ? `Payment for ${client.company}`
+          : `Payment for ${client.fullName}`
+      }));
+    } else {
+      setPaymentData(prev => ({
+        ...prev,
+        clientId: '',
+        client: undefined,
+        recipientName: '',
+        description: ''
       }));
     }
+  };
+
+  const handleInputChange = (field: keyof PaymentData, value: any) => {
+    setPaymentData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const handleGeneratePayment = async () => {
@@ -116,16 +137,16 @@ export function PaymentGenerator() {
       setQRCodeData(paymentString);
       
       toast({
-        title: 'Zahlung generiert',
-        description: 'QR-Code wurde erfolgreich erstellt.',
+        title: 'Payment generated',
+        description: 'QR code was successfully created.',
         status: 'success',
         duration: 3000,
         isClosable: true,
       });
     } catch (error) {
       toast({
-        title: 'Fehler',
-        description: 'Zahlung konnte nicht generiert werden.',
+        title: 'Error',
+        description: 'Payment could not be generated.',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -138,8 +159,19 @@ export function PaymentGenerator() {
   const handleDownloadPDF = async () => {
     if (!qrCodeData) {
       toast({
-        title: 'Fehler',
-        description: 'Bitte zuerst eine Zahlung generieren.',
+        title: 'Error',
+        description: 'Please generate a payment first.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!paymentData.amount || paymentData.amount <= 0) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a valid amount.',
         status: 'warning',
         duration: 3000,
         isClosable: true,
@@ -155,26 +187,31 @@ export function PaymentGenerator() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          paymentData,
+          paymentData: {
+            ...paymentData,
+            amount: Number(paymentData.amount) || 0,
+            clientId: selectedClient || undefined
+          },
           qrCodeData,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+        const errorData = await response.json();
+        throw new Error(errorData.details || 'PDF could not be created');
       }
 
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Gastropay_Zahlung_${paymentData.reference || 'QR'}.pdf`;
+      link.download = `Gastropay_Payment_${paymentData.reference || 'QR'}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
       
       toast({
-        title: 'PDF erstellt',
-        description: 'Die PDF wurde erfolgreich heruntergeladen.',
+        title: 'PDF created',
+        description: 'The PDF was successfully downloaded.',
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -182,8 +219,8 @@ export function PaymentGenerator() {
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
-        title: 'Fehler',
-        description: 'PDF konnte nicht erstellt werden.',
+        title: 'Error',
+        description: error.message || 'PDF could not be created.',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -196,8 +233,8 @@ export function PaymentGenerator() {
   const handleCopyReference = () => {
     navigator.clipboard.writeText(paymentData.reference);
     toast({
-      title: 'Referenz kopiert',
-      description: 'Die Referenznummer wurde in die Zwischenablage kopiert.',
+      title: 'Reference copied',
+      description: 'The reference number was copied to the clipboard.',
       status: 'success',
       duration: 2000,
       isClosable: true,
@@ -221,20 +258,52 @@ export function PaymentGenerator() {
       borderColor={borderColor}
     >
       <VStack spacing={8}>
-        <Heading size="md" alignSelf="flex-start">Zahlung erstellen</Heading>
+        <Heading size="md" alignSelf="flex-start">Create New Payment</Heading>
         
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8} w="full">
+          {/* Client Selection */}
+          <FormControl isRequired>
+            <FormLabel>Select Client</FormLabel>
+            <Select
+              placeholder="Select client"
+              value={paymentData.clientId || ''}
+              onChange={(e) => handleClientChange(e.target.value)}
+            >
+              {clients.map((client) => (
+                <option key={client._id.toString()} value={client._id.toString()}>
+                  {client.fullName} - {client.company || 'Individual'}
+                </option>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Display Client Information if selected */}
+          {selectedClient && (
+            <Box p={4} borderWidth="1px" borderRadius="md" bg={useColorModeValue('gray.50', 'gray.700')}>
+              <VStack align="stretch" spacing={2}>
+                <Heading size="sm" mb={2}>Client Information</Heading>
+                <SimpleGrid columns={2} spacing={4}>
+                  <Text><strong>Name:</strong> {selectedClient.fullName}</Text>
+                  <Text><strong>Company:</strong> {selectedClient.company || 'N/A'}</Text>
+                  <Text><strong>Email:</strong> {selectedClient.email}</Text>
+                  <Text><strong>Phone:</strong> {selectedClient.phoneNumber}</Text>
+                  <Text><strong>Address:</strong> {selectedClient.address}</Text>
+                </SimpleGrid>
+              </VStack>
+            </Box>
+          )}
+
           {/* Left Column - Payment Details */}
           <Box>
             <VStack spacing={6} align="stretch">
               <FormControl>
-                <FormLabel>Betrag</FormLabel>
+                <FormLabel>Amount</FormLabel>
                 <InputGroup>
                   <NumberInput
                     min={0}
                     precision={2}
                     value={paymentData.amount}
-                    onChange={(_, value) => setPaymentData({ ...paymentData, amount: value })}
+                    onChange={(_, value) => handleInputChange('amount', value)}
                     w="full"
                   >
                     <NumberInputField />
@@ -248,10 +317,10 @@ export function PaymentGenerator() {
               </FormControl>
 
               <FormControl>
-                <FormLabel>Währung</FormLabel>
+                <FormLabel>Currency</FormLabel>
                 <Select
                   value={paymentData.currency}
-                  onChange={(e) => setPaymentData({ ...paymentData, currency: e.target.value })}
+                  onChange={(e) => handleInputChange('currency', e.target.value)}
                 >
                   <option value="EUR">EUR</option>
                   <option value="USD">USD</option>
@@ -260,11 +329,11 @@ export function PaymentGenerator() {
               </FormControl>
 
               <FormControl>
-                <FormLabel>Beschreibung</FormLabel>
+                <FormLabel>Description</FormLabel>
                 <Input
                   value={paymentData.description}
-                  onChange={(e) => setPaymentData({ ...paymentData, description: e.target.value })}
-                  placeholder="Zahlungsbeschreibung eingeben..."
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  placeholder="Enter payment description..."
                 />
               </FormControl>
             </VStack>
@@ -274,52 +343,35 @@ export function PaymentGenerator() {
           <Box>
             <VStack spacing={6} align="stretch">
               <FormControl>
-                <FormLabel>Kunde</FormLabel>
-                <Select
-                  placeholder="Kunde auswählen"
-                  value={paymentData.clientId || ''}
-                  onChange={(e) => handleClientChange(e.target.value)}
-                >
-                  {clients.map((client) => (
-                    <option key={client._id.toString()} value={client._id.toString()}>
-                      {client.fullName}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl>
-                <FormLabel>Empfänger</FormLabel>
+                <FormLabel>Recipient Name</FormLabel>
                 <Input
                   value={paymentData.recipientName}
-                  onChange={(e) =>
-                    setPaymentData({ ...paymentData, recipientName: e.target.value })
-                  }
-                  placeholder="Name des Empfängers"
+                  onChange={(e) => handleInputChange('recipientName', e.target.value)}
+                  placeholder="Enter recipient name"
                 />
               </FormControl>
 
               <FormControl>
-                <FormLabel>Empfänger IBAN</FormLabel>
+                <FormLabel>Recipient IBAN</FormLabel>
                 <Input
                   value={paymentData.recipientIBAN}
-                  onChange={(e) => setPaymentData({ ...paymentData, recipientIBAN: e.target.value })}
+                  onChange={(e) => handleInputChange('recipientIBAN', e.target.value)}
                   placeholder="DE89 3704 0044 0532 0130 00"
                 />
               </FormControl>
 
               <FormControl>
-                <FormLabel>Fälligkeitsdatum</FormLabel>
+                <FormLabel>Due Date</FormLabel>
                 <Input
                   type="date"
                   value={paymentData.dueDate}
-                  onChange={(e) => setPaymentData({ ...paymentData, dueDate: e.target.value })}
+                  onChange={(e) => handleInputChange('dueDate', e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
                 />
               </FormControl>
 
               <FormControl>
-                <FormLabel>Referenz</FormLabel>
+                <FormLabel>Reference</FormLabel>
                 <InputGroup>
                   <Input
                     value={paymentData.reference}
@@ -348,12 +400,12 @@ export function PaymentGenerator() {
                     isLoading={isGeneratingPDF}
                     w="full"
                   >
-                    PDF herunterladen
+                    Download PDF
                   </Button>
                 </>
               ) : (
                 <Text color="gray.500" textAlign="center">
-                  QR-Code wird nach Generierung hier angezeigt
+                  QR code will be displayed here after generation
                 </Text>
               )}
               
@@ -363,7 +415,7 @@ export function PaymentGenerator() {
                 isLoading={isLoading}
                 w="full"
               >
-                Zahlung generieren
+                Generate Payment
               </Button>
             </VStack>
           </Box>

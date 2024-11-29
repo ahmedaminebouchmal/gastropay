@@ -4,12 +4,17 @@ import { User } from '@/lib/models/user';
 import connectDB from '@/lib/db';
 import { cookies } from 'next/headers';
 
+interface LoginRequest {
+  email: string;
+  password: string;
+}
+
 export async function POST(req: Request) {
   try {
     await connectDB();
     console.log('Connected to DB');
     
-    const { email, password } = await req.json();
+    const { email, password } = await req.json() as LoginRequest;
     console.log('Login attempt for email:', email);
 
     if (!email || !password) {
@@ -19,7 +24,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).exec();
     console.log('User found:', !!user);
 
     if (!user) {
@@ -40,7 +45,7 @@ export async function POST(req: Request) {
     }
 
     const token = jwt.sign(
-      { userId: user._id, role: user.role },
+      { userId: user._id.toString(), role: user.role },
       process.env.JWT_SECRET!,
       { expiresIn: '24h' }
     );
@@ -49,20 +54,18 @@ export async function POST(req: Request) {
     const response = NextResponse.json({ 
       success: true,
       user: {
+        id: user._id.toString(),
         email: user.email,
         role: user.role
       }
     });
 
-    // Set cookie in the response
-    response.cookies.set({
-      name: 'token',
-      value: token,
+    // Then set the cookie
+    cookies().set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 // 24 hours
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 // 24 hours
     });
 
     console.log('Login successful, token set in cookies');

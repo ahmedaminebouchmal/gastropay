@@ -20,6 +20,7 @@ import {
   InputLeftElement,
   Flex,
   Spacer,
+  useToast,
 } from '@chakra-ui/react';
 import { FiPlus, FiSearch, FiFilter } from 'react-icons/fi';
 import { ClientList } from '@/components/clients/List/ClientList';
@@ -27,12 +28,12 @@ import { ClientForm } from '@/components/clients/Forms/ClientForm';
 import { ClientDetails } from '@/components/clients/Details/ClientDetails';
 import { useState, useEffect } from 'react';
 import { Client } from '@/types';
-import { Schema } from 'mongoose';
 
 export default function ClientsPage() {
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const toast = useToast();
   
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -47,8 +48,40 @@ export default function ClientsPage() {
   };
 
   const handleDeleteClient = async (client: Client) => {
-    // TODO: Implement delete functionality
-    console.log('Delete client:', client);
+    if (!window.confirm('Möchten Sie diesen Kunden wirklich löschen?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/clients?id=${client._id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Löschen des Kunden');
+      }
+
+      toast({
+        title: 'Erfolg',
+        description: 'Kunde wurde erfolgreich gelöscht',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+
+      // Refresh the clients list
+      fetchClients();
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      toast({
+        title: 'Fehler',
+        description: error.message || 'Fehler beim Löschen des Kunden',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
 
   const handleViewInvoices = (client: Client) => {

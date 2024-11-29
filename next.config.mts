@@ -19,6 +19,19 @@ const config: NextConfig = {
         aggregateTimeout: 300,
       };
     }
+
+    // Add fallbacks for node modules used by PDFKit
+    config.resolve = {
+      ...config.resolve,
+      fallback: {
+        ...(config.resolve?.fallback || {}),
+        fs: false,
+        stream: false,
+        zlib: false,
+        crypto: false,
+      },
+    };
+
     return config;
   },
 
@@ -36,13 +49,28 @@ const config: NextConfig = {
 
   // Image optimization
   images: {
-    domains: [],
+    domains: ['images.unsplash.com'],
     unoptimized: true,
+    minimumCacheTTL: 60,
   },
 
   // Package optimizations
   experimental: {
     optimizePackageImports: ['@chakra-ui/react'],
+  },
+
+  // API configuration
+  api: {
+    bodyParser: {
+      sizeLimit: '1mb',
+    },
+    responseLimit: '8mb',
+  },
+
+  // Environment configuration
+  env: {
+    MONGODB_URI: process.env.MONGODB_URI,
+    JWT_SECRET: process.env.JWT_SECRET,
   },
 } satisfies NextConfig;
 

@@ -29,6 +29,7 @@ import {
   ModalCloseButton,
   ModalBody,
   useDisclosure,
+  useToast,
 } from '@chakra-ui/react';
 import { FiPlus, FiFilter, FiMoreVertical, FiDownload, FiEye, FiTrash2 } from 'react-icons/fi';
 import { PaymentGenerator } from '@/components/payments/Generator/PaymentGenerator';
@@ -44,23 +45,31 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const toast = useToast();
+
+  const fetchPayments = async () => {
+    try {
+      const response = await fetch('/api/payments');
+      if (!response.ok) {
+        throw new Error('Failed to fetch payments');
+      }
+      const data = await response.json();
+      setPayments(data);
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch payments',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchPayments = async () => {
-      try {
-        const response = await fetch('/api/payments');
-        if (!response.ok) {
-          throw new Error('Failed to fetch payments');
-        }
-        const data = await response.json();
-        setPayments(data);
-      } catch (error) {
-        console.error('Error fetching payments:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPayments();
   }, []);
 
@@ -79,14 +88,100 @@ export default function PaymentsPage() {
     }
   };
 
-  const handleViewPayment = (payment: Payment) => {
-    setSelectedPayment(payment);
-    // TODO: Implement view functionality
+  const handleViewPayment = async (payment: Payment) => {
+    try {
+      const qrCodeData = JSON.stringify({
+        paymentId: payment._id,
+        amount: payment.amount,
+        currency: payment.currency,
+        reference: payment.reference
+      });
+
+      const response = await fetch('/api/pdf/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentData: {
+            ...payment,
+            amount: Number(payment.amount), // Ensure amount is a number
+            clientId: typeof payment.clientId === 'object' ? payment.clientId : { fullName: 'Nicht angegeben' }
+          },
+          qrCodeData,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || 'Failed to generate PDF');
+      }
+
+      // Create a blob from the PDF stream
+      const blob = await response.blob();
+      // Create a link to download the PDF
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `payment-${payment.reference || 'unknown'}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Success',
+        description: 'PDF generated and downloaded successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to generate PDF',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
 
   const handleDeletePayment = async (payment: Payment) => {
-    // TODO: Implement delete functionality
-    console.log('Delete payment:', payment);
+    if (!confirm('Are you sure you want to delete this payment?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/payments?id=${payment._id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete payment');
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Payment deleted successfully',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+
+      // Refresh the payments list
+      fetchPayments();
+    } catch (error) {
+      console.error('Error deleting payment:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete payment',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
 
   return (
@@ -166,8 +261,7 @@ export default function PaymentsPage() {
                                 {payment.reference}
                               </td>
                               <td style={{ padding: '12px', borderBottom: '1px solid', borderColor: borderColor }}>
-                                {/* TODO: Add client name */}
-                                Client Name
+                                {payment.clientId?.fullName || 'N/A'}
                               </td>
                               <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid', borderColor: borderColor }}>
                                 {payment.amount.toFixed(2)} €
@@ -193,11 +287,11 @@ export default function PaymentsPage() {
                                       icon={<FiEye />}
                                       onClick={() => handleViewPayment(payment)}
                                     >
-                                      Anzeigen
+                                      PDF anzeigen
                                     </MenuItem>
                                     <MenuItem
                                       icon={<FiDownload />}
-                                      onClick={() => {/* TODO: Handle download */}}
+                                      onClick={() => handleViewPayment(payment)}
                                     >
                                       PDF herunterladen
                                     </MenuItem>
