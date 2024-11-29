@@ -9,9 +9,8 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 // Initialize Stripe with test key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  // @ts-ignore - Using latest API version
-  apiVersion: '2024-11-20.acacia',
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-11-20.acacia' as any,
   typescript: true,
 });
 
@@ -69,7 +68,7 @@ export async function POST(request: Request) {
       expires_at: expiresAt, // Set to 23 hours from now
       submit_type: 'pay',
       billing_address_collection: 'auto',
-    });
+    }) as Stripe.Checkout.Session;
 
     if (!session?.url) {
       throw new Error('Failed to generate Stripe checkout URL');

@@ -8,7 +8,11 @@ import {
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler,
+  ChartOptions,
+  ScaleOptions,
+  CartesianScaleOptions
 } from 'chart.js';
 
 ChartJS.register(
@@ -18,7 +22,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 interface RevenueChartProps {
@@ -29,12 +34,30 @@ interface RevenueChartProps {
       data: number[];
       borderColor: string;
       tension: number;
+      fill?: boolean;
+      backgroundColor?: string;
+      pointBackgroundColor?: string;
+      pointBorderColor?: string;
+      pointHoverBackgroundColor?: string;
+      pointHoverBorderColor?: string;
+      pointBorderWidth?: number;
+      pointHoverBorderWidth?: number;
+      pointRadius?: number;
+      pointHoverRadius?: number;
+      borderWidth?: number;
     }[];
   };
 }
 
 export function RevenueChart({ data }: RevenueChartProps) {
-  const options = {
+  const gridColor = useColorModeValue('rgba(0,0,0,0.06)', 'rgba(255,255,255,0.06)');
+  const textColor = useColorModeValue('rgba(0,0,0,0.7)', 'rgba(255,255,255,0.7)');
+  const tooltipBgColor = useColorModeValue('rgba(255,255,255,0.9)', 'rgba(0,0,0,0.9)');
+  const tooltipTitleColor = useColorModeValue('#1A202C', '#FFFFFF');
+  const tooltipBodyColor = useColorModeValue('#1A202C', '#FFFFFF');
+  const tooltipBorderColor = useColorModeValue('rgba(0,0,0,0.1)', 'rgba(255,255,255,0.1)');
+
+  const options: ChartOptions<'line'> = {
     responsive: true,
     plugins: {
       legend: {
@@ -43,23 +66,31 @@ export function RevenueChart({ data }: RevenueChartProps) {
       title: {
         display: false,
       },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        grid: {
-          color: useColorModeValue('gray.200', 'gray.700'),
-        },
-        ticks: {
-          color: useColorModeValue('gray.600', 'gray.400'),
-        }
-      },
-      x: {
-        grid: {
-          color: useColorModeValue('gray.200', 'gray.700'),
-        },
-        ticks: {
-          color: useColorModeValue('gray.600', 'gray.400'),
+      tooltip: {
+        mode: 'index' as const,
+        intersect: false,
+        backgroundColor: tooltipBgColor,
+        titleColor: tooltipTitleColor,
+        bodyColor: tooltipBodyColor,
+        borderColor: tooltipBorderColor,
+        borderWidth: 1,
+        padding: 10,
+        boxPadding: 4,
+        usePointStyle: true,
+        callbacks: {
+          label: function(context: any) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.y !== null) {
+              label += new Intl.NumberFormat('de-DE', {
+                style: 'currency',
+                currency: 'EUR'
+              }).format(context.parsed.y);
+            }
+            return label;
+          }
         }
       }
     },
@@ -67,14 +98,57 @@ export function RevenueChart({ data }: RevenueChartProps) {
       mode: 'index' as const,
       intersect: false,
     },
-    hover: {
-      mode: 'nearest' as const,
-      intersect: true,
+    scales: {
+      y: {
+        type: 'linear' as const,
+        beginAtZero: true,
+        grid: {
+          color: gridColor,
+          display: true
+        },
+        ticks: {
+          color: textColor,
+          padding: 10,
+          callback: function(value: any) {
+            return new Intl.NumberFormat('de-DE', {
+              style: 'currency',
+              currency: 'EUR',
+              notation: 'compact',
+              maximumFractionDigits: 1
+            }).format(value);
+          }
+        },
+        border: {
+          display: false
+        }
+      },
+      x: {
+        type: 'category' as const,
+        grid: {
+          display: false
+        },
+        ticks: {
+          color: textColor,
+          padding: 10
+        },
+        border: {
+          display: false
+        }
+      }
     },
+    maintainAspectRatio: false,
+    elements: {
+      line: {
+        borderWidth: 2,
+      },
+      point: {
+        hitRadius: 8,
+      }
+    }
   };
 
   return (
-    <Box h="300px">
+    <Box w="100%" h="100%" p={2}>
       <Line data={data} options={options} />
     </Box>
   );

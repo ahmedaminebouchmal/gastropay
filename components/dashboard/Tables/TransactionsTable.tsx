@@ -24,11 +24,14 @@ interface TransactionsTableProps {
   transactions: Transaction[];
 }
 
-export function TransactionsTable({ transactions }: TransactionsTableProps) {
+export const TransactionsTable: React.FC<TransactionsTableProps> = ({ transactions }) => {
+  const textColor = useColorModeValue('gray.700', 'white');
+  const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const statusBgColor = useColorModeValue('gray.100', 'gray.700');
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'completed':
         return 'green';
       case 'pending':
@@ -41,39 +44,45 @@ export function TransactionsTable({ transactions }: TransactionsTableProps) {
   };
 
   return (
-    <Box overflowX="auto">
+    <Box
+      bg={bgColor}
+      px={8}
+      py={4}
+      rounded="lg"
+      shadow="base"
+      w="full"
+      overflowX="auto"
+    >
       <Table variant="simple">
         <Thead>
           <Tr>
-            <Th borderColor={borderColor}>{translations.dashboard.user}</Th>
-            <Th borderColor={borderColor}>{translations.dashboard.amount}</Th>
-            <Th borderColor={borderColor}>{translations.dashboard.status}</Th>
-            <Th borderColor={borderColor}>{translations.dashboard.date}</Th>
+            <Th borderColor={borderColor} color={textColor}>{translations.dashboard.user}</Th>
+            <Th borderColor={borderColor} color={textColor}>{translations.dashboard.amount}</Th>
+            <Th borderColor={borderColor} color={textColor}>{translations.dashboard.status}</Th>
+            <Th borderColor={borderColor} color={textColor}>{translations.dashboard.date}</Th>
           </Tr>
         </Thead>
         <Tbody>
           {transactions.map((transaction) => (
             <Tr key={transaction.id}>
-              <Td borderColor={borderColor}>
+              <Td borderColor={borderColor} color={textColor}>
                 <Text fontWeight="medium">{transaction.user}</Text>
               </Td>
-              <Td borderColor={borderColor}>
+              <Td borderColor={borderColor} color={textColor}>
                 <Text>{transaction.amount}</Text>
               </Td>
               <Td borderColor={borderColor}>
                 <Badge
-                  colorScheme={getStatusColor(transaction.status)}
-                  px={2}
-                  py={1}
+                  bg={statusBgColor}
+                  color={getStatusColor(transaction.status)}
                   rounded="full"
+                  px={2}
                 >
                   {translations.dashboard[transaction.status]}
                 </Badge>
               </Td>
-              <Td borderColor={borderColor}>
-                <Text color={useColorModeValue('gray.600', 'gray.400')}>
-                  {transaction.date}
-                </Text>
+              <Td borderColor={borderColor} color={textColor}>
+                <Text>{transaction.date}</Text>
               </Td>
             </Tr>
           ))}
@@ -81,4 +90,4 @@ export function TransactionsTable({ transactions }: TransactionsTableProps) {
       </Table>
     </Box>
   );
-}
+};

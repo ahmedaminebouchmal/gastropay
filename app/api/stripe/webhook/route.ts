@@ -50,3 +50,11 @@ export async function POST(request: Request) {
     );
   }
 }
+
+async function handleCheckoutSession(session: Stripe.Checkout.Session) {
+  // Implementation
+}
+
+async function handlePaymentIntent(paymentIntent: Stripe.PaymentIntent) {
+  // Implementation
+}

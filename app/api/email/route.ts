@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const response = await sendPaymentEmail(data, isUpdate);
+    await sendPaymentEmail(data, isUpdate);
     console.log('Email sent successfully');
     
     return NextResponse.json(

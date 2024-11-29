@@ -174,26 +174,8 @@ export default function PaymentsPage() {
   };
 
   const handlePaymentCreated = async () => {
-    try {
-      const response = await fetch('/api/payments');
-      const data = await response.json();
-      setPayments(data);
-      onClose();
-      toast({
-        title: 'Zahlung aktualisiert',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.error('Error fetching payments:', error);
-      toast({
-        title: 'Fehler beim Aktualisieren der Zahlungen',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-    }
+    await fetchPayments();
+    onClose();
   };
 
   const handleStripeCheckout = async (payment: Payment) => {

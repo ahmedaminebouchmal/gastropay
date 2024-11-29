@@ -10,11 +10,14 @@ import {
   Badge,
   Icon,
   Button,
+  Spacer,
 } from '@chakra-ui/react';
 import { FiEdit2, FiTrash2, FiEye, FiDownload, FiCreditCard, FiArrowLeft, FiExternalLink } from 'react-icons/fi';
 import { Payment, PaymentStatus } from '@/types/payment';
+import { Client } from '@/types/client';
 import { PaymentDetails } from '../Details/PaymentDetails';
 import { useState, useMemo } from 'react';
+import { Schema } from 'mongoose';
 
 interface PaymentListProps {
   payments: Payment[];
@@ -22,6 +25,11 @@ interface PaymentListProps {
   onDelete?: (payment: Payment) => void;
   onDownload?: (payment: Payment) => void;
   onStripeCheckout?: (payment: Payment) => void;
+}
+
+// Type guard to check if clientId is a Client object
+function isClient(clientId: Schema.Types.ObjectId | Client): clientId is Client {
+  return (clientId as Client).fullName !== undefined;
 }
 
 function PaymentCard({ payment }: { payment: Payment }) {
@@ -63,13 +71,32 @@ function PaymentCard({ payment }: { payment: Payment }) {
     return payment.dueDate ? formatDate(payment.dueDate) : '';
   }, [payment.dueDate]);
 
+  const clientInfo = useMemo(() => {
+    if (payment.clientId && isClient(payment.clientId)) {
+      return {
+        name: payment.clientId.fullName,
+        company: payment.clientId.company
+      };
+    }
+    return null;
+  }, [payment.clientId]);
+
   return (
     <VStack align="start" spacing={2} w="full">
       <HStack spacing={3} width="full">
         <Icon as={FiCreditCard} w={5} h={5} color={iconColor} />
-        <Text fontWeight="medium" fontSize="lg">
-          {payment.reference}
-        </Text>
+        <VStack align="start" spacing={0}>
+          <Text fontWeight="medium" fontSize="lg">
+            {payment.reference}
+          </Text>
+          {clientInfo && (
+            <Text fontSize="sm" color={mutedColor}>
+              {clientInfo.name}
+              {clientInfo.company && ` - ${clientInfo.company}`}
+            </Text>
+          )}
+        </VStack>
+        <Spacer />
         <Badge colorScheme={getStatusColor(payment.status)}>
           {payment.status}
         </Badge>

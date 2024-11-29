@@ -6,19 +6,29 @@ const MotionBox = motion(Box);
 
 interface StatCardProps {
   title: string;
-  stat: string;
+  stat: string | number;
   icon: any;
   helpText?: string;
-  trend?: 'up' | 'down';
-  percentage?: string;
+  type?: 'increase' | 'decrease';
+  percentage?: number;
 }
 
-export function StatCard({ title, stat, icon, helpText, trend, percentage }: StatCardProps) {
+export const StatCard: React.FC<StatCardProps> = ({
+  title,
+  stat,
+  icon,
+  helpText,
+  type,
+  percentage,
+}) => {
   const bgGradient = useColorModeValue(
     'linear(to-r, white, gray.50)',
     'linear(to-r, gray.800, gray.700)'
   );
-  
+  const textColor = useColorModeValue('gray.600', 'gray.400');
+  const iconBg = useColorModeValue('gray.100', 'gray.700');
+  const statColor = type === 'increase' ? 'green.500' : 'red.500';
+
   return (
     <MotionBox
       whileHover={{ scale: 1.02 }}
@@ -43,17 +53,17 @@ export function StatCard({ title, stat, icon, helpText, trend, percentage }: Sta
             </StatNumber>
             <HStack spacing={2}>
               <Icon 
-                as={trend === 'up' ? FiTrendingUp : FiTrendingDown} 
-                color={trend === 'up' ? 'green.500' : 'red.500'}
+                as={type === 'increase' ? FiTrendingUp : FiTrendingDown} 
+                color={statColor}
               />
               <StatHelpText 
-                color={trend === 'up' ? 'green.500' : 'red.500'}
+                color={statColor}
                 fontWeight="bold"
               >
                 {percentage}
               </StatHelpText>
               {helpText && (
-                <StatHelpText color={useColorModeValue('gray.600', 'gray.400')}>
+                <StatHelpText color={textColor}>
                   {helpText}
                 </StatHelpText>
               )}
