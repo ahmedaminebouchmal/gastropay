@@ -30,11 +30,18 @@ import {
   ModalBody,
   useDisclosure,
   useToast,
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
 } from '@chakra-ui/react';
-import { FiPlus, FiFilter, FiMoreVertical, FiDownload, FiEye, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiFilter, FiMoreVertical, FiDownload, FiEye, FiTrash2, FiEdit2 } from 'react-icons/fi';
 import { PaymentGenerator } from '@/components/payments/Generator/PaymentGenerator';
 import { useState, useEffect } from 'react';
-import { Payment, PaymentStatus } from '@/types';
+import { Payment, PaymentStatus } from '@/types/payment';
+import { Client } from '@/types/client';
 
 export default function PaymentsPage() {
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -45,6 +52,8 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<Payment | null>(null);
   const toast = useToast();
 
   const fetchPayments = async () => {
@@ -88,15 +97,22 @@ export default function PaymentsPage() {
     }
   };
 
-  const handleViewPayment = async (payment: Payment) => {
+  const handleGeneratePDF = async (payment: Payment) => {
     try {
-      const qrCodeData = JSON.stringify({
-        paymentId: payment._id,
-        amount: payment.amount,
-        currency: payment.currency,
-        reference: payment.reference
+      // Create Stripe checkout session first
+      const stripeResponse = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference: payment.reference }),
       });
 
+      if (!stripeResponse.ok) {
+        throw new Error('Failed to create Stripe checkout session');
+      }
+
+      const { url: stripeUrl } = await stripeResponse.json();
+
+      // Generate PDF with Stripe URL
       const response = await fetch('/api/pdf/generate', {
         method: 'POST',
         headers: {
@@ -105,10 +121,10 @@ export default function PaymentsPage() {
         body: JSON.stringify({
           paymentData: {
             ...payment,
-            amount: Number(payment.amount), // Ensure amount is a number
-            clientId: typeof payment.clientId === 'object' ? payment.clientId : { fullName: 'Nicht angegeben' }
+            amount: Number(payment.amount),
+            client: payment.clientId
           },
-          qrCodeData,
+          qrCodeData: stripeUrl,
         }),
       });
 
@@ -148,13 +164,16 @@ export default function PaymentsPage() {
     }
   };
 
-  const handleDeletePayment = async (payment: Payment) => {
-    if (!confirm('Are you sure you want to delete this payment?')) {
-      return;
-    }
+  const handleDeleteClick = (payment: Payment) => {
+    setPaymentToDelete(payment);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!paymentToDelete) return;
 
     try {
-      const response = await fetch(`/api/payments?id=${payment._id}`, {
+      const response = await fetch(`/api/payments/${paymentToDelete._id}`, {
         method: 'DELETE',
       });
 
@@ -163,25 +182,33 @@ export default function PaymentsPage() {
       }
 
       toast({
-        title: 'Success',
-        description: 'Payment deleted successfully',
+        title: 'Erfolg',
+        description: 'Zahlung wurde erfolgreich gelöscht',
         status: 'success',
         duration: 5000,
         isClosable: true,
       });
 
-      // Refresh the payments list
+      // Refresh payments list
       fetchPayments();
     } catch (error) {
       console.error('Error deleting payment:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to delete payment',
+        title: 'Fehler',
+        description: 'Zahlung konnte nicht gelöscht werden',
         status: 'error',
         duration: 5000,
         isClosable: true,
       });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setPaymentToDelete(null);
     }
+  };
+
+  const handleEditPayment = (payment: Payment) => {
+    setSelectedPayment(payment);
+    onOpen();
   };
 
   return (
@@ -210,137 +237,107 @@ export default function PaymentsPage() {
             </HStack>
           </Flex>
 
-          {/* Payment List */}
-          <Box
-            bg={cardBg}
-            borderRadius="xl"
-            borderWidth="1px"
-            borderColor={borderColor}
-            overflow="hidden"
-          >
-            <Tabs colorScheme="purple">
-              <TabList px={4}>
-                <Tab>Alle</Tab>
-                <Tab>Ausstehend</Tab>
-                <Tab>Bezahlt</Tab>
-                <Tab>Bestätigt</Tab>
-                <Tab>Abgelehnt</Tab>
-              </TabList>
-
-              <TabPanels>
-                <TabPanel p={0}>
-                  <Box overflowX="auto">
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr>
-                          <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid', borderColor: borderColor }}>Referenz</th>
-                          <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid', borderColor: borderColor }}>Kunde</th>
-                          <th style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid', borderColor: borderColor }}>Betrag</th>
-                          <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid', borderColor: borderColor }}>Status</th>
-                          <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid', borderColor: borderColor }}>Fällig am</th>
-                          <th style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid', borderColor: borderColor }}></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {loading ? (
-                          <tr>
-                            <td colSpan={6} style={{ padding: '24px', textAlign: 'center' }}>
-                              <Text color="gray.500">Lade Zahlungen...</Text>
-                            </td>
-                          </tr>
-                        ) : payments.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} style={{ padding: '24px', textAlign: 'center' }}>
-                              <Text color="gray.500">Keine Zahlungen vorhanden</Text>
-                            </td>
-                          </tr>
-                        ) : (
-                          payments.map((payment) => (
-                            <tr key={payment._id.toString()}>
-                              <td style={{ padding: '12px', borderBottom: '1px solid', borderColor: borderColor }}>
-                                {payment.reference}
-                              </td>
-                              <td style={{ padding: '12px', borderBottom: '1px solid', borderColor: borderColor }}>
-                                {payment.clientId?.fullName || 'N/A'}
-                              </td>
-                              <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid', borderColor: borderColor }}>
-                                {payment.amount.toFixed(2)} €
-                              </td>
-                              <td style={{ padding: '12px', borderBottom: '1px solid', borderColor: borderColor }}>
-                                <Badge colorScheme={getStatusColor(payment.status)}>
-                                  {payment.status}
-                                </Badge>
-                              </td>
-                              <td style={{ padding: '12px', borderBottom: '1px solid', borderColor: borderColor }}>
-                                {new Date(payment.dueDate).toLocaleDateString('de-DE')}
-                              </td>
-                              <td style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid', borderColor: borderColor }}>
-                                <Menu>
-                                  <MenuButton
-                                    as={IconButton}
-                                    icon={<FiMoreVertical />}
-                                    variant="ghost"
-                                    size="sm"
-                                  />
-                                  <MenuList>
-                                    <MenuItem
-                                      icon={<FiEye />}
-                                      onClick={() => handleViewPayment(payment)}
-                                    >
-                                      PDF anzeigen
-                                    </MenuItem>
-                                    <MenuItem
-                                      icon={<FiDownload />}
-                                      onClick={() => handleViewPayment(payment)}
-                                    >
-                                      PDF herunterladen
-                                    </MenuItem>
-                                    <MenuItem
-                                      icon={<FiTrash2 />}
-                                      onClick={() => handleDeletePayment(payment)}
-                                      color="red.500"
-                                    >
-                                      Löschen
-                                    </MenuItem>
-                                  </MenuList>
-                                </Menu>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </Box>
-                </TabPanel>
-                <TabPanel>
-                  <Text p={4} color="gray.500">Ausstehende Zahlungen werden hier angezeigt</Text>
-                </TabPanel>
-                <TabPanel>
-                  <Text p={4} color="gray.500">Bezahlte Zahlungen werden hier angezeigt</Text>
-                </TabPanel>
-                <TabPanel>
-                  <Text p={4} color="gray.500">Bestätigte Zahlungen werden hier angezeigt</Text>
-                </TabPanel>
-                <TabPanel>
-                  <Text p={4} color="gray.500">Abgelehnte Zahlungen werden hier angezeigt</Text>
-                </TabPanel>
-              </TabPanels>
-            </Tabs>
-          </Box>
+          {/* Payment list */}
+          {loading ? (
+            <Text>Loading...</Text>
+          ) : (
+            <Box>
+              {payments.map((payment) => (
+                <Box
+                  key={payment._id.toString()}
+                  p={5}
+                  bg={cardBg}
+                  borderRadius="lg"
+                  borderWidth="1px"
+                  borderColor={borderColor}
+                  mb={4}
+                >
+                  <Flex align="center" justify="space-between">
+                    <VStack align="start" spacing={2}>
+                      <Text fontWeight="bold">
+                        Reference: {payment.reference}
+                      </Text>
+                      <Text>
+                        Amount: {payment.amount} {payment.currency}
+                      </Text>
+                      <Badge colorScheme={getStatusColor(payment.status)}>
+                        {payment.status}
+                      </Badge>
+                    </VStack>
+                    <HStack>
+                      <IconButton
+                        aria-label="Download PDF"
+                        icon={<FiDownload />}
+                        onClick={() => handleGeneratePDF(payment)}
+                        colorScheme="purple"
+                        variant="ghost"
+                      />
+                      <IconButton
+                        aria-label="Zahlung bearbeiten"
+                        icon={<FiEdit2 />}
+                        onClick={() => handleEditPayment(payment)}
+                        colorScheme="blue"
+                        variant="ghost"
+                      />
+                      <IconButton
+                        aria-label="Zahlung löschen"
+                        icon={<FiTrash2 />}
+                        onClick={() => handleDeleteClick(payment)}
+                        colorScheme="red"
+                        variant="ghost"
+                      />
+                    </HStack>
+                  </Flex>
+                </Box>
+              ))}
+            </Box>
+          )}
         </VStack>
       </Container>
 
-      {/* Payment Form Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="6xl">
+      {/* Payment Generator Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size="xl">
         <ModalOverlay />
-        <ModalContent maxWidth="1400px">
-          <ModalHeader>Neue Zahlung erstellen</ModalHeader>
+        <ModalContent maxW="800px">
+          <ModalHeader>{selectedPayment ? 'Zahlung bearbeiten' : 'Neue Zahlung'}</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
-            <PaymentGenerator />
+            <PaymentGenerator 
+              onClose={onClose}
+              onPaymentCreated={fetchPayments}
+              payment={selectedPayment}
+            />
           </ModalBody>
         </ModalContent>
       </Modal>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        isOpen={isDeleteDialogOpen}
+        leastDestructiveRef={undefined}
+        onClose={() => setIsDeleteDialogOpen(false)}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Zahlung löschen
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Sind Sie sicher? Diese Aktion kann nicht rückgängig gemacht werden.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button onClick={() => setIsDeleteDialogOpen(false)}>
+                Abbrechen
+              </Button>
+              <Button colorScheme="red" onClick={handleDeleteConfirm} ml={3}>
+                Löschen
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 }

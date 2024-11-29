@@ -14,6 +14,8 @@ export async function POST(req: Request) {
       );
     }
 
+    console.log('Received payment data:', paymentData); // Debug log
+
     // Create a new PDF document
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -25,6 +27,7 @@ export async function POST(req: Request) {
     const primaryColor = '#553C9A'; // Purple
     const secondaryColor = '#2D3748'; // Dark gray
     const lightGray = '#718096';
+    const linkColor = '#3182CE'; // Blue for links
     
     // Generate QR code as data URL with styling
     const qrCodeDataUrl = await QRCode.toDataURL(qrCodeData, {
@@ -61,6 +64,7 @@ export async function POST(req: Request) {
 
     // Add client information section if client data exists
     if (paymentData.client) {
+      console.log('Adding client info to PDF:', paymentData.client); // Debug log
       doc.setTextColor(secondaryColor);
       doc.setFontSize(18);
       doc.text('Kundeninformationen', 20, yPos);
@@ -91,6 +95,8 @@ export async function POST(req: Request) {
       });
 
       yPos += 10;
+    } else {
+      console.log('No client data found in paymentData:', paymentData); // Debug log
     }
 
     // Add payment details section
@@ -106,64 +112,72 @@ export async function POST(req: Request) {
     yPos += 15;
     doc.setFontSize(12);
 
-    // Payment details rows with safe string conversion
-    const rows = [
-      ['Betrag', `${Number(paymentData.amount).toFixed(2)} ${String(paymentData.currency)}`, true],
-      ['Zahlungsempfänger', String(paymentData.recipientName || 'Nicht angegeben')],
-      ['IBAN', String(paymentData.recipientIBAN || 'Nicht angegeben')],
-      ['Beschreibung', String(paymentData.description || 'Keine Beschreibung')],
-      ['Fälligkeitsdatum', paymentData.dueDate ? new Date(paymentData.dueDate).toLocaleDateString('de-DE') : 'Nicht angegeben'],
-      ['Datum', new Date().toLocaleDateString('de-DE')],
-      ['Referenz', String(paymentData.reference || 'Nicht verfügbar')],
+    // Payment details with safe string conversion
+    const paymentDetails = [
+      ['Referenznummer', String(paymentData.reference || '')],
+      ['Betrag', `${Number(paymentData.amount).toFixed(2)} ${paymentData.currency || 'EUR'}`],
+      ['Beschreibung', String(paymentData.description || '')],
+      ['Fälligkeitsdatum', new Date(paymentData.dueDate).toLocaleDateString('de-DE')],
     ];
 
-    // Add payment details rows with alternating background
-    rows.forEach((row, index) => {
-      if (index % 2 === 0) {
-        doc.setFillColor(248, 250, 252);
-        doc.rect(15, yPos - 4, 180, 8, 'F');
-      }
+    if (paymentData.recipientName) {
+      paymentDetails.push(['Empfänger', String(paymentData.recipientName)]);
+    }
+    if (paymentData.recipientIBAN) {
+      paymentDetails.push(['IBAN', String(paymentData.recipientIBAN)]);
+    }
 
+    paymentDetails.forEach(([label, value]) => {
       doc.setTextColor(secondaryColor);
-      doc.text(String(row[0]), 20, yPos);
-      doc.setTextColor(row[2] ? primaryColor : lightGray);
-      doc.text(String(row[1]), 100, yPos);
+      doc.text(String(label) + ':', 20, yPos);
+      doc.setTextColor(lightGray);
+      doc.text(String(value), 80, yPos);
       yPos += 8;
     });
 
-    // Add QR Code section
-    yPos += 15;
-    doc.setTextColor(secondaryColor);
-    doc.setFontSize(14);
-    doc.text('QR-Code für Zahlung', 105, yPos, { align: 'center' });
-
-    // Add QR code with border
+    // Add payment link
     yPos += 5;
-    const qrSize = 60;
-    const qrX = (210 - qrSize) / 2;
-    
-    // Add white background and border for QR code
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(primaryColor);
-    doc.setLineWidth(0.5);
-    doc.rect(qrX - 2, yPos - 2, qrSize + 4, qrSize + 4, 'FD');
+    doc.setTextColor(linkColor);
+    doc.setFont('helvetica', 'normal');
+    doc.textWithLink('Klicken Sie hier zum Bezahlen', 20, yPos, { url: qrCodeData });
     
     // Add QR code
-    doc.addImage(qrCodeDataUrl, 'PNG', qrX, yPos, qrSize, qrSize);
+    yPos += 15;
+    doc.addImage(qrCodeDataUrl, 'PNG', 20, yPos, 40, 40);
+
+    // Add payment instructions
+    yPos += 50;
+    doc.setTextColor(secondaryColor);
+    doc.setFontSize(14);
+    doc.text('Zahlungsanweisungen:', 20, yPos);
+    yPos += 8;
+    doc.setFontSize(11);
+    doc.setTextColor(lightGray);
+    const instructions = [
+      '1. Scannen Sie den QR-Code oder klicken Sie auf den Zahlungslink oben',
+      '2. Sie werden zur sicheren Stripe-Zahlungsseite weitergeleitet',
+      '3. Geben Sie Ihre Kartendaten ein',
+      '4. Nach erfolgreicher Zahlung erhalten Sie eine Bestätigung'
+    ];
+
+    instructions.forEach(instruction => {
+      doc.text(instruction, 20, yPos);
+      yPos += 6;
+    });
 
     // Add system generation text with adjusted position
-    yPos += qrSize + 7; 
+    yPos += 20;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(secondaryColor);
     doc.text('Diese Zahlung wurde über das GastroPay System generiert.', 105, yPos, { align: 'center' });
 
     // Add current date closer to the text
-    yPos += 5; 
-    const currentDate = new Date().toLocaleDateString('de-DE', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    yPos += 5;
+    const currentDate = new Date().toLocaleDateString('de-DE', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
     doc.text(currentDate, 105, yPos, { align: 'center' });
 
