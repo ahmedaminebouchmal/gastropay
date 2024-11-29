@@ -107,6 +107,29 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Reset form data when payment prop changes or component mounts
+  useEffect(() => {
+    setFormData({
+      amount: payment?.amount?.toString() || '',
+      currency: payment?.currency || 'EUR',
+      dueDate: payment?.dueDate ? new Date(payment.dueDate).toISOString().split('T')[0] : '',
+      clientId: payment?.clientId ? getObjectId(
+        typeof payment.clientId === 'object' && '_id' in payment.clientId 
+          ? payment.clientId._id 
+          : payment.clientId
+      ) : '',
+      description: payment?.description || '',
+      reference: payment?.reference || generateReference(),
+      recipientName: payment?.recipientName || '',
+      recipientIBAN: payment?.recipientIBAN || '',
+      status: payment?.status || PaymentStatus.PENDING
+    });
+    setSelectedClient(null);
+    setQRCodeData('');
+    setIsSubmitting(false);
+    setIsGeneratingPDF(false);
+  }, [payment]);
+
   // Effects
   useEffect(() => {
     const fetchClients = async () => {
@@ -219,6 +242,50 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
         throw new Error('Failed to generate PDF');
       }
 
+      const pdfBlob = await pdfResponse.blob();
+      const pdfBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+        reader.readAsDataURL(pdfBlob);
+      });
+
+      // 4. Send email with payment details and PDF
+      if (selectedClient?.email) {
+        const emailResponse = await fetch('/api/email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            clientName: selectedClient.fullName || selectedClient.company || 'Valued Customer',
+            clientEmail: selectedClient.email,
+            amount: Number(formData.amount),
+            currency: formData.currency,
+            reference: formData.reference,
+            description: formData.description,
+            paymentLink: stripeUrl,
+            dueDate: formData.dueDate || undefined,
+            attachments: [{
+              content: pdfBase64,
+              filename: `payment-${formData.reference}.pdf`,
+              type: 'application/pdf',
+              disposition: 'attachment'
+            }]
+          }),
+        });
+
+        if (!emailResponse.ok) {
+          console.error('Failed to send email notification');
+          toast({
+            title: 'Email Notification',
+            description: 'Payment created successfully, but there was an issue sending the email notification.',
+            status: 'warning',
+            duration: 5000,
+            isClosable: true,
+          });
+        }
+      }
+
       // Set QR code data for display
       setQRCodeData(stripeUrl);
 
@@ -286,6 +353,50 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.details || 'Failed to generate PDF');
+      }
+
+      const pdfBlob = await response.blob();
+      const pdfBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+        reader.readAsDataURL(pdfBlob);
+      });
+
+      // 4. Send email with payment details and PDF
+      if (selectedClient?.email) {
+        const emailResponse = await fetch('/api/email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            clientName: selectedClient.fullName || selectedClient.company || 'Valued Customer',
+            clientEmail: selectedClient.email,
+            amount: Number(formData.amount),
+            currency: formData.currency,
+            reference: formData.reference,
+            description: formData.description,
+            paymentLink: stripeUrl,
+            dueDate: formData.dueDate || undefined,
+            attachments: [{
+              content: pdfBase64,
+              filename: `payment-${formData.reference}.pdf`,
+              type: 'application/pdf',
+              disposition: 'attachment'
+            }]
+          }),
+        });
+
+        if (!emailResponse.ok) {
+          console.error('Failed to send email notification');
+          toast({
+            title: 'Email Notification',
+            description: 'Payment created successfully, but there was an issue sending the email notification.',
+            status: 'warning',
+            duration: 5000,
+            isClosable: true,
+          });
+        }
       }
 
       const blob = await response.blob();

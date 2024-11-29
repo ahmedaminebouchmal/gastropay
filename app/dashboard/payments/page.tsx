@@ -206,9 +206,18 @@ export default function PaymentsPage() {
     }
   };
 
-  const handleEditPayment = (payment: Payment) => {
-    setSelectedPayment(payment);
+  const handleOpenModal = (payment?: Payment) => {
+    setSelectedPayment(payment || null);
     onOpen();
+  };
+
+  const handleCloseModal = () => {
+    setSelectedPayment(null);
+    onClose();
+  };
+
+  const handleEditPayment = (payment: Payment) => {
+    handleOpenModal(payment);
   };
 
   return (
@@ -230,7 +239,7 @@ export default function PaymentsPage() {
               <Button
                 leftIcon={<FiPlus />}
                 colorScheme="purple"
-                onClick={onOpen}
+                onClick={() => handleOpenModal()}
               >
                 Neue Zahlung
               </Button>
@@ -296,14 +305,14 @@ export default function PaymentsPage() {
       </Container>
 
       {/* Payment Generator Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <Modal isOpen={isOpen} onClose={handleCloseModal} size="xl">
         <ModalOverlay />
         <ModalContent maxW="800px">
           <ModalHeader>{selectedPayment ? 'Zahlung bearbeiten' : 'Neue Zahlung'}</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
             <PaymentGenerator 
-              onClose={onClose}
+              onClose={handleCloseModal}
               onPaymentCreated={fetchPayments}
               payment={selectedPayment}
             />
