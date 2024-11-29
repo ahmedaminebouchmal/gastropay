@@ -8,12 +8,18 @@ if (!process.env.SENDGRID_API_KEY) {
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-export const sendPaymentEmail = async (data: PaymentEmailData) => {
-  const template = generatePaymentTemplate(data);
+export const sendPaymentEmail = async (data: PaymentEmailData, isUpdate: boolean = false) => {
+  console.log('Generating email template:', {
+    isUpdate,
+    clientEmail: data.clientEmail,
+    reference: data.reference
+  });
+
+  const template = generatePaymentTemplate(data, isUpdate);
 
   const msg = {
     to: data.clientEmail,
-    from: process.env.SENDGRID_FROM_EMAIL || 'noreply@gastropay.com', // Update this with your verified sender
+    from: process.env.SENDGRID_FROM_EMAIL || 'noreply@gastropay.com',
     subject: template.subject,
     text: template.text,
     html: template.html,
@@ -21,10 +27,18 @@ export const sendPaymentEmail = async (data: PaymentEmailData) => {
   };
 
   try {
+    console.log('Sending email via SendGrid:', {
+      to: msg.to,
+      from: msg.from,
+      subject: msg.subject,
+      hasAttachments: !!msg.attachments?.length
+    });
+
     const response = await sgMail.send(msg);
+    console.log('SendGrid response:', response[0].statusCode);
     return response;
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('Error sending email via SendGrid:', error);
     throw error;
   }
 };

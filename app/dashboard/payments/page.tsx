@@ -250,56 +250,114 @@ export default function PaymentsPage() {
           {loading ? (
             <Text>Loading...</Text>
           ) : (
-            <Box>
+            <VStack spacing={4} align="stretch">
               {payments.map((payment) => (
                 <Box
                   key={payment._id.toString()}
-                  p={5}
+                  p={4}
                   bg={cardBg}
                   borderRadius="lg"
                   borderWidth="1px"
                   borderColor={borderColor}
-                  mb={4}
+                  boxShadow="sm"
+                  _hover={{ boxShadow: 'md' }}
+                  transition="all 0.2s"
                 >
-                  <Flex align="center" justify="space-between">
-                    <VStack align="start" spacing={2}>
-                      <Text fontWeight="bold">
-                        Reference: {payment.reference}
+                  <Flex align="center" gap={4}>
+                    {/* Payment Info */}
+                    <VStack align="start" flex={1} spacing={2}>
+                      <HStack spacing={3}>
+                        <Text fontWeight="bold">{payment.reference}</Text>
+                        <Badge
+                          colorScheme={
+                            payment.status === PaymentStatus.PAID
+                              ? 'green'
+                              : payment.status === PaymentStatus.PENDING
+                              ? 'yellow'
+                              : 'red'
+                          }
+                        >
+                          {payment.status}
+                        </Badge>
+                      </HStack>
+                      
+                      {/* Client Info */}
+                      {payment.clientId && typeof payment.clientId === 'object' && '_id' in payment.clientId && (
+                        <VStack align="start" spacing={1}>
+                          <HStack spacing={2}>
+                            <Text 
+                              fontSize="sm" 
+                              fontWeight="medium" 
+                              color={useColorModeValue('gray.700', 'gray.200')}
+                            >
+                              {payment.clientId.fullName}
+                            </Text>
+                            {payment.clientId.company && (
+                              <>
+                                <Text fontSize="sm" color={useColorModeValue('gray.500', 'gray.400')}>•</Text>
+                                <Text 
+                                  fontSize="sm" 
+                                  fontWeight="medium"
+                                  color={useColorModeValue('gray.700', 'gray.200')}
+                                >
+                                  {payment.clientId.company}
+                                </Text>
+                              </>
+                            )}
+                          </HStack>
+                          {payment.clientId.address && (
+                            <Text fontSize="sm" color={useColorModeValue('gray.500', 'gray.400')}>
+                              {payment.clientId.address}
+                            </Text>
+                          )}
+                          {payment.clientId.email && (
+                            <Text fontSize="sm" color={useColorModeValue('gray.500', 'gray.400')}>
+                              {payment.clientId.email}
+                            </Text>
+                          )}
+                        </VStack>
+                      )}
+                      
+                      {/* Payment Amount */}
+                      <Text fontSize="sm" fontWeight="medium">
+                        {new Intl.NumberFormat('de-DE', {
+                          style: 'currency',
+                          currency: payment.currency || 'EUR'
+                        }).format(Number(payment.amount))}
                       </Text>
-                      <Text>
-                        Amount: {payment.amount} {payment.currency}
-                      </Text>
-                      <Badge colorScheme={getStatusColor(payment.status)}>
-                        {payment.status}
-                      </Badge>
                     </VStack>
-                    <HStack>
+
+                    {/* Actions */}
+                    <HStack spacing={2}>
                       <IconButton
-                        aria-label="Download PDF"
-                        icon={<FiDownload />}
-                        onClick={() => handleGeneratePDF(payment)}
+                        aria-label="View payment"
+                        icon={<FiEye />}
+                        size="sm"
+                        variant="ghost"
                         colorScheme="purple"
-                        variant="ghost"
+                        onClick={() => handleGeneratePDF(payment)}
                       />
                       <IconButton
-                        aria-label="Zahlung bearbeiten"
+                        aria-label="Edit payment"
                         icon={<FiEdit2 />}
-                        onClick={() => handleEditPayment(payment)}
-                        colorScheme="blue"
+                        size="sm"
                         variant="ghost"
+                        colorScheme="purple"
+                        onClick={() => handleEditPayment(payment)}
                       />
                       <IconButton
-                        aria-label="Zahlung löschen"
+                        aria-label="Delete payment"
                         icon={<FiTrash2 />}
-                        onClick={() => handleDeleteClick(payment)}
-                        colorScheme="red"
+                        size="sm"
                         variant="ghost"
+                        colorScheme="red"
+                        onClick={() => handleDeleteClick(payment)}
                       />
                     </HStack>
                   </Flex>
                 </Box>
               ))}
-            </Box>
+            </VStack>
           )}
         </VStack>
       </Container>

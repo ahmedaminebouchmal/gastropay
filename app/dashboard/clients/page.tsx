@@ -22,7 +22,7 @@ import {
   Spacer,
   useToast,
 } from '@chakra-ui/react';
-import { FiPlus, FiSearch, FiFilter } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiFilter, FiArrowLeft } from 'react-icons/fi';
 import { ClientList } from '@/components/clients/List/ClientList';
 import { ClientForm } from '@/components/clients/Forms/ClientForm';
 import { ClientDetails } from '@/components/clients/Details/ClientDetails';
@@ -41,6 +41,17 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'details'>('list');
+  const [selectedViewClient, setSelectedViewClient] = useState<Client | null>(null);
+
+  const handleViewClient = (client: Client) => {
+    setSelectedViewClient(client);
+    setViewMode('details');
+  };
+
+  const handleBackToList = () => {
+    setViewMode('list');
+    setSelectedViewClient(null);
+  };
 
   const handleEditClient = (client: Client) => {
     setSelectedClient(client);
@@ -58,35 +69,29 @@ export default function ClientsPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Fehler beim Löschen des Kunden');
+        throw new Error('Failed to delete client');
       }
 
+      // Remove client from state
+      setClients(clients.filter(c => c._id !== client._id));
+
       toast({
-        title: 'Erfolg',
-        description: 'Kunde wurde erfolgreich gelöscht',
+        title: 'Kunde gelöscht',
+        description: 'Der Kunde wurde erfolgreich gelöscht.',
         status: 'success',
         duration: 5000,
         isClosable: true,
       });
-
-      // Refresh the clients list
-      fetchClients();
     } catch (error) {
       console.error('Error deleting client:', error);
       toast({
         title: 'Fehler',
-        description: error.message || 'Fehler beim Löschen des Kunden',
+        description: 'Der Kunde konnte nicht gelöscht werden.',
         status: 'error',
         duration: 5000,
         isClosable: true,
       });
     }
-  };
-
-  const handleViewInvoices = (client: Client) => {
-    setSelectedClient(client);
-    setViewMode('details');
   };
 
   const fetchClients = async () => {
@@ -130,130 +135,136 @@ export default function ClientsPage() {
     }
   };
 
-  const handleBackToList = () => {
-    setViewMode('list');
-    setSelectedClient(null);
-  };
-
-  const handleRateClient = (client: Client) => {
-    // TODO: Implement rating functionality
-    console.log('Rate client:', client);
-  };
-
   return (
-    <Box minH="100vh" bg={bgColor} pt={8} pb={8}>
-      <Container maxW="container.xl">
-        {viewMode === 'list' ? (
-          <VStack spacing={8} align="stretch">
-            <Flex align="center" wrap="wrap" gap={4}>
-              <Heading size="lg">Kunden</Heading>
-              <Spacer />
-              <HStack spacing={4}>
-                <InputGroup maxW="300px">
-                  <InputLeftElement pointerEvents="none">
-                    <FiSearch color="gray.300" />
-                  </InputLeftElement>
-                  <Input
-                    placeholder="Kunden suchen..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    bg={cardBg}
-                    borderRadius="lg"
-                  />
-                </InputGroup>
-                <Button
-                  leftIcon={<FiFilter />}
-                  variant="outline"
-                  colorScheme="purple"
-                  size="md"
-                  borderRadius="lg"
-                  fontWeight="medium"
-                  px={4}
-                >
-                  Filter
-                </Button>
-                <Button
-                  leftIcon={<FiPlus />}
-                  colorScheme="purple"
-                  size="md"
-                  onClick={onOpen}
-                  borderRadius="lg"
-                  fontWeight="medium"
-                  px={6}
-                  _hover={{
-                    transform: 'translateY(-1px)',
-                    boxShadow: 'lg',
-                  }}
-                  _active={{
-                    transform: 'translateY(0)',
-                  }}
-                  transition="all 0.2s"
-                >
-                  Neuer Kunde
-                </Button>
-              </HStack>
-            </Flex>
+    <Box minH="100vh" bg={bgColor}>
+      <Container maxW="container.xl" py={8}>
+        <VStack spacing={8} align="stretch">
+          {/* Header */}
+          <Flex align="center" wrap="wrap" gap={4}>
+            {viewMode === 'details' ? (
+              <>
+                <HStack>
+                  <Button
+                    variant="ghost"
+                    onClick={handleBackToList}
+                    leftIcon={<FiArrowLeft />}
+                  >
+                    Zurück
+                  </Button>
+                  <Heading size="lg">Kundendetails</Heading>
+                </HStack>
+              </>
+            ) : (
+              <>
+                <Heading size="lg">Kunden</Heading>
+                <Spacer />
+                <HStack spacing={4}>
+                  <InputGroup maxW="300px">
+                    <InputLeftElement pointerEvents="none">
+                      <FiSearch color="gray.300" />
+                    </InputLeftElement>
+                    <Input
+                      placeholder="Suchen..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </InputGroup>
+                  <Button
+                    leftIcon={<FiFilter />}
+                    variant="outline"
+                    colorScheme="purple"
+                  >
+                    Filter
+                  </Button>
+                  <Button
+                    leftIcon={<FiPlus />}
+                    colorScheme="purple"
+                    onClick={() => {
+                      setSelectedClient(null);
+                      onOpen();
+                    }}
+                  >
+                    Neuer Kunde
+                  </Button>
+                </HStack>
+              </>
+            )}
+          </Flex>
 
+          {/* Content */}
+          {viewMode === 'details' && selectedViewClient ? (
             <Box
               bg={cardBg}
-              borderRadius="xl"
+              p={6}
+              borderRadius="lg"
               borderWidth="1px"
               borderColor={borderColor}
-              overflow="hidden"
             >
-              <Tabs colorScheme="purple">
-                <TabList px={4}>
-                  <Tab>Alle Kunden</Tab>
-                  <Tab>Aktiv</Tab>
-                  <Tab>Inaktiv</Tab>
-                </TabList>
-
-                <TabPanels>
-                  <TabPanel p={0}>
-                    <ClientList
-                      clients={clients}
-                      onEdit={handleEditClient}
-                      onDelete={handleDeleteClient}
-                      onViewInvoices={handleViewInvoices}
-                      onRate={handleRateClient}
-                    />
-                  </TabPanel>
-                  <TabPanel>
-                    <Text p={4} color="gray.500">Aktive Kunden werden hier angezeigt</Text>
-                  </TabPanel>
-                  <TabPanel>
-                    <Text p={4} color="gray.500">Inaktive Kunden werden hier angezeigt</Text>
-                  </TabPanel>
-                </TabPanels>
-              </Tabs>
+              <ClientDetails client={selectedViewClient} />
             </Box>
-          </VStack>
-        ) : (
-          <VStack spacing={8} align="stretch">
-            <HStack>
-              <Button
-                variant="ghost"
-                onClick={handleBackToList}
-              >
-                ← Zurück zur Übersicht
-              </Button>
-            </HStack>
-            {selectedClient && (
-              <ClientDetails
-                client={selectedClient}
-                transactions={[]} // Will be populated with real data
-              />
-            )}
-          </VStack>
-        )}
-
-        {/* Client Form Modal */}
-        <ClientForm
-          isOpen={isOpen}
-          onClose={onClose}
-          onSubmit={handleCreateClient}
-        />
+          ) : (
+            <ClientList
+              clients={clients.filter(client =>
+                client.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                client.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (client.company && client.company.toLowerCase().includes(searchQuery.toLowerCase()))
+              )}
+              onView={handleViewClient}
+              onEdit={handleEditClient}
+              onDelete={handleDeleteClient}
+            />
+          )}
+        </VStack>
       </Container>
+
+      {/* Client Form Modal */}
+      <ClientForm
+        isOpen={isOpen}
+        onClose={onClose}
+        onSubmit={async (data) => {
+          try {
+            const res = selectedClient
+              ? await fetch(`/api/clients/${selectedClient._id}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(data),
+                })
+              : await fetch('/api/clients', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(data),
+                });
+
+            if (!res.ok) throw new Error('Failed to save client');
+            
+            const updatedClient = await res.json();
+            
+            if (selectedClient) {
+              // Update existing client in state
+              setClients(clients.map(c =>
+                c._id === updatedClient._id ? updatedClient : c
+              ));
+            } else {
+              // Add new client to state
+              setClients([...clients, updatedClient]);
+            }
+            
+            onClose();
+            toast({
+              title: selectedClient ? 'Client updated' : 'Client created',
+              status: 'success',
+              duration: 3000,
+            });
+          } catch (error) {
+            console.error('Error saving client:', error);
+            toast({
+              title: 'Error saving client',
+              status: 'error',
+              duration: 3000,
+            });
+          }
+        }}
+      />
     </Box>
   );
 }

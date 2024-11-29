@@ -29,10 +29,10 @@ interface Transaction {
 
 interface ClientDetailsProps {
   client: Client;
-  transactions: Transaction[];
+  transactions?: Transaction[];
 }
 
-export function ClientDetails({ client, transactions }: ClientDetailsProps) {
+export function ClientDetails({ client, transactions = [] }: ClientDetailsProps) {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const iconColor = useColorModeValue('purple.500', 'purple.300');
@@ -121,7 +121,13 @@ export function ClientDetails({ client, transactions }: ClientDetailsProps) {
 
           {/* Transactions Panel */}
           <TabPanel p={6}>
-            <TransactionsTable transactions={transactions} />
+            {transactions.length > 0 ? (
+              <TransactionsTable transactions={transactions} />
+            ) : (
+              <Box py={4} textAlign="center">
+                <Text color="gray.500">Keine Transaktionen gefunden</Text>
+              </Box>
+            )}
           </TabPanel>
 
           {/* Documents Panel */}

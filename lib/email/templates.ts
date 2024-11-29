@@ -1,7 +1,7 @@
 import { PaymentEmailData, EmailTemplate } from './types';
 
-export const generatePaymentTemplate = (data: PaymentEmailData): EmailTemplate => {
-  const formattedAmount = new Intl.NumberFormat('es-ES', {
+export const generatePaymentTemplate = (data: PaymentEmailData, isUpdate: boolean = false): EmailTemplate => {
+  const formattedAmount = new Intl.NumberFormat('de-DE', {
     style: 'currency',
     currency: data.currency,
   }).format(data.amount);
@@ -33,17 +33,29 @@ export const generatePaymentTemplate = (data: PaymentEmailData): EmailTemplate =
             margin: 20px 0;
           }
           .footer { margin-top: 30px; font-size: 12px; color: #666; }
+          .update-badge {
+            background-color: #f6ad55;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: inline-block;
+          }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>Payment Request</h1>
+            <h1>${isUpdate ? 'Payment Update' : 'Payment Request'}</h1>
+            ${isUpdate ? '<span class="update-badge">Updated Payment Information</span>' : ''}
           </div>
           
           <p>Dear ${data.clientName},</p>
           
-          <p>A new payment request has been created for you with the following details:</p>
+          <p>${isUpdate 
+            ? 'Your payment request has been updated with the following details:' 
+            : 'A new payment request has been created for you with the following details:'}</p>
           
           <ul>
             <li><strong>Amount:</strong> <span class="amount">${formattedAmount}</span></li>
@@ -60,6 +72,9 @@ export const generatePaymentTemplate = (data: PaymentEmailData): EmailTemplate =
           <p>${data.paymentLink}</p>
           
           <div class="footer">
+            ${isUpdate 
+              ? '<p>This is an update to your previous payment request. The new payment link above replaces any previous links.</p>' 
+              : ''}
             <p>If you have any questions, please don't hesitate to contact us.</p>
             <p>This is an automated message, please do not reply directly to this email.</p>
           </div>
@@ -69,11 +84,14 @@ export const generatePaymentTemplate = (data: PaymentEmailData): EmailTemplate =
   `;
 
   const text = `
-Payment Request
+${isUpdate ? 'Payment Update' : 'Payment Request'}
+${isUpdate ? '[Updated Payment Information]' : ''}
 
 Dear ${data.clientName},
 
-A new payment request has been created for you with the following details:
+${isUpdate 
+  ? 'Your payment request has been updated with the following details:' 
+  : 'A new payment request has been created for you with the following details:'}
 
 Amount: ${formattedAmount}
 Reference: ${data.reference}
@@ -83,13 +101,15 @@ ${formattedDueDate ? `Due Date: ${formattedDueDate}` : ''}
 To complete your payment, please visit:
 ${data.paymentLink}
 
+${isUpdate ? 'This is an update to your previous payment request. The new payment link above replaces any previous links.' : ''}
+
 If you have any questions, please don't hesitate to contact us.
 
 This is an automated message, please do not reply directly to this email.
   `;
 
   return {
-    subject: `Payment Request - ${data.reference}`,
+    subject: isUpdate ? `Payment Update - ${data.reference}` : `Payment Request - ${data.reference}`,
     html,
     text,
   };

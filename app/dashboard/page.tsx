@@ -9,7 +9,10 @@ import {
   StatNumber,
   StatHelpText,
   useColorModeValue,
+  Icon,
   VStack,
+  Text,
+  HStack,
   Heading,
   Badge,
   Progress,
@@ -19,11 +22,6 @@ import {
   Tr,
   Th,
   Td,
-  Text,
-  FiUsers,
-  FiDollarSign,
-  FiShoppingBag,
-  FiActivity,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { Line } from 'react-chartjs-2';
@@ -37,6 +35,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
+import { FiUsers, FiDollarSign, FiShoppingBag, FiActivity, FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
 import { translations } from '@/translations/de';
 
 ChartJS.register(
@@ -203,18 +202,23 @@ export default function DashboardPage() {
               borderColor={borderColor}
             >
               <Stat>
-                <StatLabel color={mutedTextColor} fontSize="sm" fontWeight="medium">
-                  Gesamtbenutzer
-                </StatLabel>
+                <HStack spacing={2} mb={2}>
+                  <Icon as={FiUsers} color={mutedTextColor} boxSize={5} />
+                  <StatLabel color={mutedTextColor} fontSize="sm" fontWeight="medium">
+                    Gesamtbenutzer
+                  </StatLabel>
+                </HStack>
                 <StatNumber color={headingColor} fontSize="2xl" fontWeight="bold" mt={2}>
                   4.000
                 </StatNumber>
                 <StatHelpText color="green.500" fontWeight="medium">
-                  <Text as="span" color="green.500">+21%</Text>
-                  {' '}
-                  <Text as="span" color={mutedTextColor} fontSize="sm">
-                    vs. letzter Monat
-                  </Text>
+                  <HStack spacing={1} align="center">
+                    <Icon as={FiTrendingUp} />
+                    <Text as="span" color="green.500">+21%</Text>
+                    <Text as="span" color={mutedTextColor} fontSize="sm">
+                      vs. letzter Monat
+                    </Text>
+                  </HStack>
                 </StatHelpText>
               </Stat>
             </Box>
@@ -228,18 +232,23 @@ export default function DashboardPage() {
               borderColor={borderColor}
             >
               <Stat>
-                <StatLabel color={mutedTextColor} fontSize="sm" fontWeight="medium">
-                  Einnahmen
-                </StatLabel>
+                <HStack spacing={2} mb={2}>
+                  <Icon as={FiDollarSign} color={mutedTextColor} boxSize={5} />
+                  <StatLabel color={mutedTextColor} fontSize="sm" fontWeight="medium">
+                    Einnahmen
+                  </StatLabel>
+                </HStack>
                 <StatNumber color={headingColor} fontSize="2xl" fontWeight="bold" mt={2}>
                   34.890 €
                 </StatNumber>
                 <StatHelpText color="green.500" fontWeight="medium">
-                  <Text as="span" color="green.500">+15%</Text>
-                  {' '}
-                  <Text as="span" color={mutedTextColor} fontSize="sm">
-                    vs. letzter Monat
-                  </Text>
+                  <HStack spacing={1} align="center">
+                    <Icon as={FiTrendingUp} />
+                    <Text as="span" color="green.500">+15%</Text>
+                    <Text as="span" color={mutedTextColor} fontSize="sm">
+                      vs. letzter Monat
+                    </Text>
+                  </HStack>
                 </StatHelpText>
               </Stat>
             </Box>
@@ -253,18 +262,23 @@ export default function DashboardPage() {
               borderColor={borderColor}
             >
               <Stat>
-                <StatLabel color={mutedTextColor} fontSize="sm" fontWeight="medium">
-                  Bestellungen
-                </StatLabel>
+                <HStack spacing={2} mb={2}>
+                  <Icon as={FiShoppingBag} color={mutedTextColor} boxSize={5} />
+                  <StatLabel color={mutedTextColor} fontSize="sm" fontWeight="medium">
+                    Transaktionen
+                  </StatLabel>
+                </HStack>
                 <StatNumber color={headingColor} fontSize="2xl" fontWeight="bold" mt={2}>
-                  876
+                  1.234
                 </StatNumber>
                 <StatHelpText color="green.500" fontWeight="medium">
-                  <Text as="span" color="green.500">+8%</Text>
-                  {' '}
-                  <Text as="span" color={mutedTextColor} fontSize="sm">
-                    vs. letzter Monat
-                  </Text>
+                  <HStack spacing={1} align="center">
+                    <Icon as={FiTrendingUp} />
+                    <Text as="span" color="green.500">+18%</Text>
+                    <Text as="span" color={mutedTextColor} fontSize="sm">
+                      vs. letzter Monat
+                    </Text>
+                  </HStack>
                 </StatHelpText>
               </Stat>
             </Box>
@@ -278,18 +292,23 @@ export default function DashboardPage() {
               borderColor={borderColor}
             >
               <Stat>
-                <StatLabel color={mutedTextColor} fontSize="sm" fontWeight="medium">
-                  Konversionsrate
-                </StatLabel>
+                <HStack spacing={2} mb={2}>
+                  <Icon as={FiActivity} color={mutedTextColor} boxSize={5} />
+                  <StatLabel color={mutedTextColor} fontSize="sm" fontWeight="medium">
+                    Aktivität
+                  </StatLabel>
+                </HStack>
                 <StatNumber color={headingColor} fontSize="2xl" fontWeight="bold" mt={2}>
-                  3,2%
+                  89%
                 </StatNumber>
                 <StatHelpText color="red.500" fontWeight="medium">
-                  <Text as="span" color="red.500">-2%</Text>
-                  {' '}
-                  <Text as="span" color={mutedTextColor} fontSize="sm">
-                    vs. letzter Monat
-                  </Text>
+                  <HStack spacing={1} align="center">
+                    <Icon as={FiTrendingDown} />
+                    <Text as="span" color="red.500">-5%</Text>
+                    <Text as="span" color={mutedTextColor} fontSize="sm">
+                      vs. letzter Monat
+                    </Text>
+                  </HStack>
                 </StatHelpText>
               </Stat>
             </Box>
