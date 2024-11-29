@@ -47,6 +47,7 @@
     "react-hook-form": "^7.53.2",
     "react-icons": "^5.0.1",
     "react-toastify": "^10.0.6",
+    "stripe": "^17.4.0",
     "yup": "^1.4.0"
   },
   "devDependencies": {

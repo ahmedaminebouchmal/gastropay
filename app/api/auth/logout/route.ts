@@ -9,8 +9,8 @@ export async function POST() {
       message: 'Logged out successfully'
     });
 
-    // Clear the token cookie
-    response.cookies.delete('token');
+    // Clear the token cookie using the cookies() API
+    cookies().delete('token');
 
     return response;
   } catch (error) {

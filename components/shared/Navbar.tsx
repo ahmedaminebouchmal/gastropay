@@ -15,10 +15,11 @@ import {
   useColorMode,
   Text,
   useColorModeValue,
+  useToast,
 } from '@chakra-ui/react';
 import { FiMenu, FiUser, FiMoon, FiSun } from 'react-icons/fi';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 
 const MotionText = motion(Text);
@@ -26,6 +27,39 @@ const MotionText = motion(Text);
 export default function Navbar() {
   const { colorMode, toggleColorMode } = useColorMode();
   const pathname = usePathname();
+  const router = useRouter();
+  const toast = useToast();
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        router.push('/login');
+        toast({
+          title: 'Erfolgreich abgemeldet',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      } else {
+        throw new Error('Logout failed');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: 'Fehler beim Abmelden',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
 
   const isActive = (path: string) => pathname === path;
   const bgColor = useColorModeValue('white', 'gray.900');
@@ -130,6 +164,7 @@ export default function Navbar() {
                 <MenuItem
                   color="red.500"
                   _hover={{ bg: useColorModeValue('red.50', 'red.900') }}
+                  onClick={handleLogout}
                 >
                   Abmelden
                 </MenuItem>
