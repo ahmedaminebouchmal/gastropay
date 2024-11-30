@@ -18,12 +18,13 @@ import {
 import { FiMail, FiPhone, FiMapPin, FiHome, FiFileText } from 'react-icons/fi';
 import { TransactionsTable } from '../../dashboard/Tables/TransactionsTable';
 import { Client } from '@/types';
+import { PaymentStatus } from '@/types/payment';
 
 interface Transaction {
-  id: number;
-  user: string;
+  id: string;
+  client: string;
   amount: string;
-  status: 'completed' | 'pending' | 'failed';
+  status: PaymentStatus;
   date: string;
 }
 

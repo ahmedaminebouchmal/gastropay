@@ -40,10 +40,12 @@ export const translations = {
       lastYear: 'Letztes Jahr',
       custom: 'Benutzerdefiniert'
     },
-    user: 'Benutzer',
-    amount: 'Betrag',
-    status: 'Status',
-    date: 'Datum',
+    table: {
+      user: 'Benutzer',
+      amount: 'Betrag',
+      status: 'Status',
+      date: 'Datum'
+    },
     company: 'Firma',
     email: 'E-Mail',
     phone: 'Telefon',
@@ -51,9 +53,7 @@ export const translations = {
     pending: 'In Bearbeitung',
     failed: 'Fehlgeschlagen',
     vsLastMonth: 'vs. letzter Monat',
-    customerSatisfaction: 'Kundenzufriedenheit',
-    orderCompletionRate: 'Bestellabschlussrate',
-    positiveReviews: 'Positive Bewertungen',
+    revenueOverTime: 'Umsatzentwicklung',
     successRate: 'Erfolgsrate'
   }
 };

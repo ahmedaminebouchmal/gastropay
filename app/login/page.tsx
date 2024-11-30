@@ -144,7 +144,7 @@ export default function LoginPage() {
               >
                 {t.title}
               </Text>
-              <Text color={useColorModeValue('gray.500', 'gray.400')}>
+              <Text color={useColorModeValue('gray.600', 'gray.400')}>
                 {t.subtitle}
               </Text>
             </Stack>
@@ -164,7 +164,7 @@ export default function LoginPage() {
               <Stack spacing="6">
                 <Stack spacing="5">
                   <FormControl>
-                    <FormLabel htmlFor="email">{t.email}</FormLabel>
+                    <FormLabel htmlFor="email" color={useColorModeValue('gray.700', 'gray.200')}>{t.email}</FormLabel>
                     <Input
                       id="email"
                       type="email"
@@ -173,6 +173,8 @@ export default function LoginPage() {
                       required
                       size="lg"
                       borderRadius="md"
+                      color={useColorModeValue('gray.800', 'white')}
+                      borderColor={useColorModeValue('gray.300', 'gray.600')}
                       _focus={{
                         borderColor: 'purple.500',
                         boxShadow: '0 0 0 1px purple.500',
@@ -180,7 +182,7 @@ export default function LoginPage() {
                     />
                   </FormControl>
                   <FormControl>
-                    <FormLabel htmlFor="password">{t.password}</FormLabel>
+                    <FormLabel htmlFor="password" color={useColorModeValue('gray.700', 'gray.200')}>{t.password}</FormLabel>
                     <InputGroup size="lg">
                       <Input
                         id="password"
@@ -189,6 +191,8 @@ export default function LoginPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         borderRadius="md"
+                        color={useColorModeValue('gray.800', 'white')}
+                        borderColor={useColorModeValue('gray.300', 'gray.600')}
                         _focus={{
                           borderColor: 'purple.500',
                           boxShadow: '0 0 0 1px purple.500',

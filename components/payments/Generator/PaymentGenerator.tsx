@@ -83,6 +83,10 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
   const toast = useToast();
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const textColor = useColorModeValue('gray.800', 'white');
+  const labelColor = useColorModeValue('gray.600', 'gray.300');
+  const inputBgColor = useColorModeValue('white', 'gray.700');
+  const inputBorderColor = useColorModeValue('gray.300', 'gray.600');
 
   // State hooks
   const [formData, setFormData] = useState<PaymentFormData>({
@@ -469,13 +473,14 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
       borderWidth="1px"
       borderColor={borderColor}
       width="100%"
+      color={textColor}
     >
       <VStack spacing={6} align="stretch">
-        <Heading size="md">{payment ? 'Zahlung bearbeiten' : 'Neue Zahlung erstellen'}</Heading>
+        <Heading size="md" color={textColor}>{payment ? 'Zahlung bearbeiten' : 'Neue Zahlung erstellen'}</Heading>
         
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
           <FormControl isRequired>
-            <FormLabel>Betrag</FormLabel>
+            <FormLabel color={labelColor}>Betrag</FormLabel>
             <InputGroup>
               <NumberInput
                 value={formData.amount}
@@ -483,6 +488,8 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
                 min={0}
                 precision={2}
                 width="full"
+                bg={inputBgColor}
+                borderColor={inputBorderColor}
               >
                 <NumberInputField />
                 <NumberInputStepper>
@@ -495,11 +502,13 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
           </FormControl>
 
           <FormControl>
-            <FormLabel>Währung</FormLabel>
+            <FormLabel color={labelColor}>Währung</FormLabel>
             <Select
               name="currency"
               value={formData.currency}
               onChange={(e) => handleInputChange('currency', e.target.value)}
+              bg={inputBgColor}
+              borderColor={inputBorderColor}
             >
               <option value="EUR">EUR</option>
               <option value="USD">USD</option>
@@ -509,22 +518,26 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
           </FormControl>
 
           <FormControl>
-            <FormLabel>Fälligkeitsdatum</FormLabel>
+            <FormLabel color={labelColor}>Fälligkeitsdatum</FormLabel>
             <Input
               type="date"
               name="dueDate"
               value={formData.dueDate}
               onChange={(e) => handleInputChange('dueDate', e.target.value)}
+              bg={inputBgColor}
+              borderColor={inputBorderColor}
             />
           </FormControl>
 
           <FormControl>
-            <FormLabel>Kunde</FormLabel>
+            <FormLabel color={labelColor}>Kunde</FormLabel>
             <Select
               name="clientId"
               value={formData.clientId}
               onChange={(e) => handleInputChange('clientId', e.target.value)}
               placeholder="Kunde auswählen"
+              bg={inputBgColor}
+              borderColor={inputBorderColor}
             >
               {clients.map((client) => (
                 <option key={client._id.toString()} value={client._id.toString()}>
@@ -535,23 +548,27 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
           </FormControl>
 
           <FormControl>
-            <FormLabel>Beschreibung</FormLabel>
+            <FormLabel color={labelColor}>Beschreibung</FormLabel>
             <Input
               name="description"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               placeholder="Beschreibung der Zahlung"
+              bg={inputBgColor}
+              borderColor={inputBorderColor}
             />
           </FormControl>
 
           <FormControl>
-            <FormLabel>Referenz</FormLabel>
+            <FormLabel color={labelColor}>Referenz</FormLabel>
             <InputGroup>
               <Input
                 name="reference"
                 value={formData.reference}
                 onChange={(e) => handleInputChange('reference', e.target.value)}
                 isReadOnly
+                bg={inputBgColor}
+                borderColor={inputBorderColor}
               />
               <InputRightElement>
                 <IconButton
@@ -566,32 +583,38 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
           </FormControl>
 
           <FormControl>
-            <FormLabel>Empfänger Name</FormLabel>
+            <FormLabel color={labelColor}>Empfänger Name</FormLabel>
             <Input
               name="recipientName"
               value={formData.recipientName}
               onChange={(e) => handleInputChange('recipientName', e.target.value)}
               placeholder="Name des Empfängers"
+              bg={inputBgColor}
+              borderColor={inputBorderColor}
             />
           </FormControl>
 
           <FormControl>
-            <FormLabel>Empfänger IBAN</FormLabel>
+            <FormLabel color={labelColor}>Empfänger IBAN</FormLabel>
             <Input
               name="recipientIBAN"
               value={formData.recipientIBAN}
               onChange={(e) => handleInputChange('recipientIBAN', e.target.value)}
               placeholder="IBAN des Empfängers"
+              bg={inputBgColor}
+              borderColor={inputBorderColor}
             />
           </FormControl>
 
           {payment && (
             <FormControl>
-              <FormLabel>Status</FormLabel>
+              <FormLabel color={labelColor}>Status</FormLabel>
               <Select
                 name="status"
                 value={formData.status}
                 onChange={(e) => handleInputChange('status', e.target.value)}
+                bg={inputBgColor}
+                borderColor={inputBorderColor}
               >
                 <option value={PaymentStatus.PENDING}>Ausstehend</option>
                 <option value={PaymentStatus.PAID}>Bezahlt</option>

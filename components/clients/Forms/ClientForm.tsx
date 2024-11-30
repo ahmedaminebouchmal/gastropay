@@ -53,6 +53,11 @@ export function ClientForm({ isOpen, onClose, onSubmit }: ClientFormProps) {
   const toast = useToast();
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const textColor = useColorModeValue('gray.800', 'white');
+  const labelColor = useColorModeValue('gray.600', 'gray.300');
+  const inputBgColor = useColorModeValue('white', 'gray.700');
+  const inputBorderColor = useColorModeValue('gray.300', 'gray.600');
+  const errorTextColor = useColorModeValue('red.500', 'red.300');
 
   const {
     register,
@@ -99,47 +104,73 @@ export function ClientForm({ isOpen, onClose, onSubmit }: ClientFormProps) {
       motionPreset="slideInBottom"
     >
       <ModalOverlay backdropFilter="blur(4px)" />
-      <ModalContent mx={4}>
-        <ModalHeader>Neuer Kunde</ModalHeader>
+      <ModalContent mx={4} bg={bgColor} color={textColor}>
+        <ModalHeader color={textColor}>Neuer Kunde</ModalHeader>
         <ModalCloseButton />
         <form onSubmit={handleSubmit(handleFormSubmit)}>
           <ModalBody pb={6}>
             <VStack spacing={6}>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} w="full">
                 <FormControl isInvalid={!!errors.fullName}>
-                  <FormLabel>Name</FormLabel>
-                  <Input {...register('fullName')} />
-                  <FormErrorMessage>{errors.fullName?.message}</FormErrorMessage>
+                  <FormLabel color={labelColor}>Name</FormLabel>
+                  <Input 
+                    {...register('fullName')} 
+                    bg={inputBgColor}
+                    borderColor={inputBorderColor}
+                    _placeholder={{ color: useColorModeValue('gray.400', 'gray.500') }}
+                  />
+                  <FormErrorMessage color={errorTextColor}>{errors.fullName?.message}</FormErrorMessage>
                 </FormControl>
 
                 <FormControl isInvalid={!!errors.email}>
-                  <FormLabel>E-Mail</FormLabel>
-                  <Input {...register('email')} type="email" />
-                  <FormErrorMessage>{errors.email?.message}</FormErrorMessage>
+                  <FormLabel color={labelColor}>E-Mail</FormLabel>
+                  <Input 
+                    {...register('email')} 
+                    type="email" 
+                    bg={inputBgColor}
+                    borderColor={inputBorderColor}
+                    _placeholder={{ color: useColorModeValue('gray.400', 'gray.500') }}
+                  />
+                  <FormErrorMessage color={errorTextColor}>{errors.email?.message}</FormErrorMessage>
                 </FormControl>
 
                 <FormControl isInvalid={!!errors.phoneNumber}>
-                  <FormLabel>Telefon</FormLabel>
-                  <Input {...register('phoneNumber')} />
-                  <FormErrorMessage>{errors.phoneNumber?.message}</FormErrorMessage>
+                  <FormLabel color={labelColor}>Telefon</FormLabel>
+                  <Input 
+                    {...register('phoneNumber')} 
+                    bg={inputBgColor}
+                    borderColor={inputBorderColor}
+                    _placeholder={{ color: useColorModeValue('gray.400', 'gray.500') }}
+                  />
+                  <FormErrorMessage color={errorTextColor}>{errors.phoneNumber?.message}</FormErrorMessage>
                 </FormControl>
 
                 <FormControl isInvalid={!!errors.company}>
-                  <FormLabel>Firma (Optional)</FormLabel>
-                  <Input {...register('company')} />
-                  <FormErrorMessage>{errors.company?.message}</FormErrorMessage>
+                  <FormLabel color={labelColor}>Firma (Optional)</FormLabel>
+                  <Input 
+                    {...register('company')} 
+                    bg={inputBgColor}
+                    borderColor={inputBorderColor}
+                    _placeholder={{ color: useColorModeValue('gray.400', 'gray.500') }}
+                  />
+                  <FormErrorMessage color={errorTextColor}>{errors.company?.message}</FormErrorMessage>
                 </FormControl>
               </SimpleGrid>
 
               <FormControl isInvalid={!!errors.address}>
-                <FormLabel>Adresse</FormLabel>
-                <Input {...register('address')} />
-                <FormErrorMessage>{errors.address?.message}</FormErrorMessage>
+                <FormLabel color={labelColor}>Adresse</FormLabel>
+                <Input 
+                  {...register('address')} 
+                  bg={inputBgColor}
+                  borderColor={inputBorderColor}
+                  _placeholder={{ color: useColorModeValue('gray.400', 'gray.500') }}
+                />
+                <FormErrorMessage color={errorTextColor}>{errors.address?.message}</FormErrorMessage>
               </FormControl>
             </VStack>
           </ModalBody>
 
-          <ModalFooter gap={3}>
+          <ModalFooter gap={3} borderTopWidth="1px" borderColor={borderColor}>
             <Button variant="ghost" onClick={onClose}>
               Abbrechen
             </Button>

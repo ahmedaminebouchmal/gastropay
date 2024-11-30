@@ -25,9 +25,11 @@ export const StatCard: React.FC<StatCardProps> = ({
     'linear(to-r, white, gray.50)',
     'linear(to-r, gray.800, gray.700)'
   );
-  const textColor = useColorModeValue('gray.600', 'gray.400');
+  const textColor = useColorModeValue('gray.700', 'gray.300');
   const iconBg = useColorModeValue('gray.100', 'gray.700');
   const statColor = type === 'increase' ? 'green.500' : 'red.500';
+  const labelColor = useColorModeValue('gray.600', 'gray.400');
+  const numberColor = useColorModeValue('gray.800', 'white');
 
   return (
     <MotionBox
@@ -45,10 +47,10 @@ export const StatCard: React.FC<StatCardProps> = ({
       >
         <Flex justifyContent="space-between">
           <Box pl={2}>
-            <StatLabel fontWeight="medium" isTruncated>
+            <StatLabel fontWeight="medium" isTruncated color={labelColor}>
               {title}
             </StatLabel>
-            <StatNumber fontSize="2xl" fontWeight="bold">
+            <StatNumber fontSize="2xl" fontWeight="bold" color={numberColor}>
               {stat}
             </StatNumber>
             <HStack spacing={2}>
@@ -56,15 +58,16 @@ export const StatCard: React.FC<StatCardProps> = ({
                 as={type === 'increase' ? FiTrendingUp : FiTrendingDown} 
                 color={statColor}
               />
-              <StatHelpText 
-                color={statColor}
-                fontWeight="bold"
-              >
-                {percentage}
-              </StatHelpText>
               {helpText && (
                 <StatHelpText color={textColor}>
                   {helpText}
+                  {percentage !== undefined && (
+                    <span style={{ color: statColor }}>
+                      {' '}
+                      ({type === 'increase' ? '+' : '-'}
+                      {percentage.toFixed(1)}%)
+                    </span>
+                  )}
                 </StatHelpText>
               )}
             </HStack>

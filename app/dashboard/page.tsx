@@ -202,6 +202,9 @@ export default function DashboardPage() {
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const headingColor = useColorModeValue('gray.800', 'white');
+  const textColor = useColorModeValue('gray.700', 'gray.300');
+  const selectBg = useColorModeValue('white', 'gray.700');
   const clientBgColor = useColorModeValue('gray.50', 'gray.700');
   const chartLineColor = useColorModeValue('#553C9A', '#B794F4');
   const chartBgColor = useColorModeValue(
@@ -297,7 +300,7 @@ export default function DashboardPage() {
           ? payment.clientId.fullName 
           : 'Unknown',
         amount: formatCurrency(payment.amount, payment.currency),
-        status: payment.status,
+        status: payment.status as PaymentStatus,
         date: formatDate(payment.createdAt)
       }));
 
@@ -337,12 +340,16 @@ export default function DashboardPage() {
         <VStack spacing={8} align="stretch">
           {/* Header with Time Range Selector */}
           <Flex justify="space-between" align="center">
-            <Heading size="lg">{translations.dashboard.title}</Heading>
+            <Heading size="lg" color={headingColor}>{translations.dashboard.title}</Heading>
             <Select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
               w="200px"
               size="sm"
+              bg={selectBg}
+              color={textColor}
+              borderColor={borderColor}
+              _hover={{ borderColor: 'purple.500' }}
             >
               <option value="lastWeek">{translations.dashboard.timeRange.lastWeek}</option>
               <option value="lastMonth">{translations.dashboard.timeRange.lastMonth}</option>
@@ -399,35 +406,35 @@ export default function DashboardPage() {
                 border="1px"
                 borderColor={borderColor}
               >
-                <VStack align="stretch" spacing={4}>
-                  <Heading size="md">{translations.dashboard.revenueOverview}</Heading>
-                  <Box h="300px">
-                    <RevenueChart
-                      data={{
-                        labels: stats?.monthLabels || [],
-                        datasets: [
-                          {
-                            label: translations.dashboard.totalRevenue,
-                            data: stats?.monthlyRevenue || [],
-                            borderColor: chartLineColor,
-                            backgroundColor: chartBgColor,
-                            pointBackgroundColor: chartLineColor,
-                            pointBorderColor: chartPointBorderColor,
-                            pointHoverBackgroundColor: chartPointBorderColor,
-                            pointHoverBorderColor: chartLineColor,
-                            pointBorderWidth: 2,
-                            pointHoverBorderWidth: 3,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            borderWidth: 3,
-                            tension: 0.4,
-                            fill: true
-                          }
-                        ]
-                      }}
-                    />
-                  </Box>
-                </VStack>
+                <Text fontSize="lg" fontWeight="medium" mb={4} color={headingColor}>
+                  {translations.dashboard.revenueOverTime}
+                </Text>
+                <Box h="300px">
+                  <RevenueChart
+                    data={{
+                      labels: stats?.monthLabels || [],
+                      datasets: [
+                        {
+                          label: translations.dashboard.totalRevenue,
+                          data: stats?.monthlyRevenue || [],
+                          borderColor: chartLineColor,
+                          backgroundColor: chartBgColor,
+                          pointBackgroundColor: chartLineColor,
+                          pointBorderColor: chartPointBorderColor,
+                          pointHoverBackgroundColor: chartPointBorderColor,
+                          pointHoverBorderColor: chartLineColor,
+                          pointBorderWidth: 2,
+                          pointHoverBorderWidth: 3,
+                          pointRadius: 4,
+                          pointHoverRadius: 6,
+                          borderWidth: 3,
+                          tension: 0.4,
+                          fill: true
+                        }
+                      ]
+                    }}
+                  />
+                </Box>
               </Box>
 
               {/* Recent Transactions */}
@@ -439,19 +446,18 @@ export default function DashboardPage() {
                 border="1px"
                 borderColor={borderColor}
               >
-                <VStack align="stretch" spacing={4}>
-                  <Heading size="md">{translations.dashboard.recentTransactions}</Heading>
-                  <TransactionsTable
-                    transactions={stats?.recentTransactions.map((t, index) => ({
-                      id: index,
-                      user: t.client,
-                      amount: t.amount,
-                      status: t.status === PaymentStatus.PAID ? 'completed' : 
-                             t.status === PaymentStatus.PENDING ? 'pending' : 'failed',
-                      date: t.date
-                    }))}
-                  />
-                </VStack>
+                <Text fontSize="lg" fontWeight="medium" mb={4} color={headingColor}>
+                  {translations.dashboard.recentTransactions}
+                </Text>
+                <TransactionsTable
+                  transactions={stats?.recentTransactions.map(t => ({
+                    id: t.id,
+                    client: t.client,
+                    amount: t.amount,
+                    status: t.status,
+                    date: t.date
+                  }))}
+                />
               </Box>
             </VStack>
 
@@ -466,91 +472,91 @@ export default function DashboardPage() {
                 border="1px"
                 borderColor={borderColor}
               >
-                <VStack align="stretch" spacing={4}>
-                  <Flex justify="space-between" align="center">
-                    <Heading size="md">{translations.dashboard.recentClients}</Heading>
-                    <Button
-                      as={NextLink}
-                      href="/dashboard/clients"
-                      colorScheme="purple"
-                      variant="ghost"
-                      size="sm"
-                    >
-                      {translations.dashboard.viewAll}
-                    </Button>
-                  </Flex>
-                  <VStack spacing={4} align="stretch">
-                    {clients
-                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                      .slice(0, 5)
-                      .map((client) => (
-                        <Box
-                          key={client._id.toString()}
-                          p={4}
-                          bg={clientBgColor}
-                          rounded="lg"
-                          transition="all 0.2s"
-                          _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-                        >
-                          <Flex justify="space-between" align="center">
-                            <HStack spacing={4}>
-                              <Avatar
-                                name={client.fullName}
-                                size="sm"
-                                bg="purple.500"
-                              />
-                              <Box>
-                                <Text fontWeight="medium">{client.fullName}</Text>
-                                <Text fontSize="sm" color={mutedColor}>
-                                  {client.company || 'Privatkunde'}
-                                </Text>
-                              </Box>
-                            </HStack>
-                            <HStack spacing={4}>
-                              <IconButton
-                                as="a"
-                                href={`mailto:${client.email}`}
-                                aria-label="Send email"
-                                icon={<FiMail />}
+                <Flex justify="space-between" align="center">
+                  <Text fontSize="lg" fontWeight="medium" mb={4} color={headingColor}>
+                    {translations.dashboard.recentClients}
+                  </Text>
+                  <Button
+                    as={NextLink}
+                    href="/dashboard/clients"
+                    colorScheme="purple"
+                    variant="ghost"
+                    size="sm"
+                  >
+                    {translations.dashboard.viewAll}
+                  </Button>
+                </Flex>
+                <VStack spacing={4} align="stretch">
+                  {clients
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .slice(0, 5)
+                    .map((client) => (
+                      <Box
+                        key={client._id.toString()}
+                        p={4}
+                        bg={clientBgColor}
+                        rounded="lg"
+                        transition="all 0.2s"
+                        _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
+                      >
+                        <Flex justify="space-between" align="center">
+                          <HStack spacing={4}>
+                            <Avatar
+                              name={client.fullName}
+                              size="sm"
+                              bg="purple.500"
+                            />
+                            <Box>
+                              <Text fontWeight="medium">{client.fullName}</Text>
+                              <Text fontSize="sm" color={mutedColor}>
+                                {client.company || 'Privatkunde'}
+                              </Text>
+                            </Box>
+                          </HStack>
+                          <HStack spacing={4}>
+                            <IconButton
+                              as="a"
+                              href={`mailto:${client.email}`}
+                              aria-label="Send email"
+                              icon={<FiMail />}
+                              variant="ghost"
+                              size="sm"
+                            />
+                            <IconButton
+                              as="a"
+                              href={`tel:${client.phoneNumber}`}
+                              aria-label="Call"
+                              icon={<FiPhone />}
+                              variant="ghost"
+                              size="sm"
+                            />
+                            <Menu>
+                              <MenuButton
+                                as={IconButton}
+                                aria-label="More options"
+                                icon={<FiMoreVertical />}
                                 variant="ghost"
                                 size="sm"
                               />
-                              <IconButton
-                                as="a"
-                                href={`tel:${client.phoneNumber}`}
-                                aria-label="Call"
-                                icon={<FiPhone />}
-                                variant="ghost"
-                                size="sm"
-                              />
-                              <Menu>
-                                <MenuButton
-                                  as={IconButton}
-                                  aria-label="More options"
-                                  icon={<FiMoreVertical />}
-                                  variant="ghost"
-                                  size="sm"
-                                />
-                                <MenuList>
-                                  <MenuItem
-                                    as={NextLink}
-                                    href={`/dashboard/clients/${client._id}`}
-                                  >
-                                    Details anzeigen
-                                  </MenuItem>
-                                  <MenuItem
-                                    as={NextLink}
-                                    href={`/dashboard/payments/new?client=${client._id}`}
-                                  >
-                                    Neue Zahlung
-                                  </MenuItem>
-                                </MenuList>
-                              </Menu>
-                            </HStack>
-                          </Flex>
-                        </Box>
-                      ))}
-                  </VStack>
+                              <MenuList>
+                                <MenuItem
+                                  as={NextLink}
+                                  href={`/dashboard/clients/${client._id}`}
+                                >
+                                  Details anzeigen
+                                </MenuItem>
+                                <MenuItem
+                                  as={NextLink}
+                                  href={`/dashboard/payments/new?client=${client._id}`}
+                                >
+                                  Neue Zahlung
+                                </MenuItem>
+                              </MenuList>
+                            </Menu>
+                          </HStack>
+                        </Flex>
+                      </Box>
+                    ))}
                 </VStack>
               </Box>
             </VStack>
