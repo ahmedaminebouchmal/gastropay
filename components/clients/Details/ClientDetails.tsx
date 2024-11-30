@@ -33,21 +33,29 @@ interface ClientDetailsProps {
   transactions?: Transaction[];
 }
 
+const InfoItem = ({ icon, label, value, iconColor }: { icon: any; label: string; value: string; iconColor: string }) => (
+  <HStack spacing={4}>
+    <Icon as={icon} w={5} h={5} color={iconColor} />
+    <VStack align="start" spacing={0}>
+      <Text fontSize="sm" color={useColorModeValue('gray.600', 'gray.400')}>
+        {label}
+      </Text>
+      <Text fontWeight="medium">{value}</Text>
+    </VStack>
+  </HStack>
+);
+
 export function ClientDetails({ client, transactions = [] }: ClientDetailsProps) {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const iconColor = useColorModeValue('purple.500', 'purple.300');
 
-  const InfoItem = ({ icon, label, value }: { icon: any; label: string; value: string }) => (
-    <HStack spacing={4}>
-      <Icon as={icon} w={5} h={5} color={iconColor} />
-      <VStack align="start" spacing={0}>
-        <Text fontSize="sm" color={useColorModeValue('gray.600', 'gray.400')}>
-          {label}
-        </Text>
-        <Text fontWeight="medium">{value}</Text>
-      </VStack>
-    </HStack>
+  const renderClientInfo = () => (
+    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+      <InfoItem icon={FiMail} label="Email" value={client.email} iconColor={iconColor} />
+      <InfoItem icon={FiPhone} label="Telefon" value={client.phoneNumber} iconColor={iconColor} />
+      <InfoItem icon={FiMapPin} label="Adresse" value={client.address} iconColor={iconColor} />
+    </SimpleGrid>
   );
 
   return (
@@ -87,37 +95,18 @@ export function ClientDetails({ client, transactions = [] }: ClientDetailsProps)
         <TabPanels>
           {/* Overview Panel */}
           <TabPanel p={6}>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8}>
-              <VStack align="start" spacing={6}>
-                <Heading size="sm" mb={2}>
-                  Kontaktinformationen
-                </Heading>
+            {renderClientInfo()}
+            <VStack align="start" spacing={6} mt={6}>
+              <Heading size="sm" mb={2}>
+                Unternehmensinformationen
+              </Heading>
+              {client.company && (
                 <HStack>
-                  <Icon as={FiMail} color="gray.500" />
-                  <Text>{client.email}</Text>
+                  <Icon as={FiHome} color="gray.500" />
+                  <Text>{client.company}</Text>
                 </HStack>
-                <HStack>
-                  <Icon as={FiPhone} color="gray.500" />
-                  <Text>{client.phoneNumber}</Text>
-                </HStack>
-                <HStack>
-                  <Icon as={FiMapPin} color="gray.500" />
-                  <Text>{client.address}</Text>
-                </HStack>
-              </VStack>
-
-              <VStack align="start" spacing={6}>
-                <Heading size="sm" mb={2}>
-                  Unternehmensinformationen
-                </Heading>
-                {client.company && (
-                  <HStack>
-                    <Icon as={FiHome} color="gray.500" />
-                    <Text>{client.company}</Text>
-                  </HStack>
-                )}
-              </VStack>
-            </SimpleGrid>
+              )}
+            </VStack>
           </TabPanel>
 
           {/* Transactions Panel */}

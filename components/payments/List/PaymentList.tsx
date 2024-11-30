@@ -154,116 +154,119 @@ export function PaymentList({ payments, onEdit, onDelete, onDownload, onStripeCh
       onDelete?.(payment);
     } catch (error) {
       console.error('Error deleting payment:', error);
-      // You might want to show an error toast here
     }
   };
 
-  if (!payments || payments.length === 0) {
-    return (
-      <Box textAlign="center" py={8}>
-        <Text color="gray.500">Keine Zahlungen vorhanden</Text>
-      </Box>
-    );
-  }
+  const renderContent = () => {
+    if (!payments || payments.length === 0) {
+      return (
+        <Box textAlign="center" py={8}>
+          <Text color="gray.500">Keine Zahlungen vorhanden</Text>
+        </Box>
+      );
+    }
 
-  if (selectedPayment) {
+    if (selectedPayment) {
+      return (
+        <VStack spacing={4} align="stretch">
+          <HStack>
+            <Button
+              leftIcon={<FiArrowLeft />}
+              variant="ghost"
+              onClick={() => setSelectedPayment(null)}
+            >
+              Zurück zur Liste
+            </Button>
+          </HStack>
+
+          <PaymentDetails
+            payment={selectedPayment}
+            onGeneratePDF={() => onDownload?.(selectedPayment)}
+            onOpenStripeCheckout={() => onStripeCheckout?.(selectedPayment)}
+          />
+        </VStack>
+      );
+    }
+
     return (
-      <VStack spacing={4} align="stretch">
-        <HStack>
-          <Button
-            leftIcon={<FiArrowLeft />}
-            variant="ghost"
-            onClick={() => setSelectedPayment(null)}
+      <VStack spacing={4} align="stretch" w="full">
+        {payments.map((payment) => (
+          <Box
+            key={payment._id.toString()}
+            p={4}
+            bg={bgColor}
+            borderWidth="1px"
+            borderColor={borderColor}
+            borderRadius="lg"
+            transition="all 0.2s"
+            _hover={{
+              bg: hoverBg,
+              transform: 'translateY(-2px)',
+              boxShadow: 'sm',
+            }}
           >
-            Zurück zur Liste
-          </Button>
-        </HStack>
+            <Flex justify="space-between" align="center" gap={4}>
+              <Box flex="1">
+                <PaymentCard payment={payment} />
+              </Box>
 
-        <PaymentDetails
-          payment={selectedPayment}
-          onGeneratePDF={() => onDownload?.(selectedPayment)}
-          onOpenStripeCheckout={() => onStripeCheckout?.(selectedPayment)}
-        />
+              <HStack spacing={2}>
+                <Tooltip label="Details anzeigen">
+                  <IconButton
+                    aria-label="Zahlung anzeigen"
+                    icon={<FiEye />}
+                    variant="ghost"
+                    colorScheme="purple"
+                    size="sm"
+                    onClick={() => setSelectedPayment(payment)}
+                  />
+                </Tooltip>
+                
+                {onEdit && (
+                  <Tooltip label="Bearbeiten">
+                    <IconButton
+                      aria-label="Zahlung bearbeiten"
+                      icon={<FiEdit2 />}
+                      variant="ghost"
+                      colorScheme="purple"
+                      size="sm"
+                      onClick={() => onEdit(payment)}
+                    />
+                  </Tooltip>
+                )}
+
+                {onDownload && (
+                  <Tooltip label="PDF herunterladen">
+                    <IconButton
+                      aria-label="PDF herunterladen"
+                      icon={<FiDownload />}
+                      variant="ghost"
+                      colorScheme="purple"
+                      size="sm"
+                      onClick={() => onDownload(payment)}
+                    />
+                  </Tooltip>
+                )}
+                
+                {onDelete && (
+                  <Tooltip label="Löschen">
+                    <IconButton
+                      aria-label="Zahlung löschen"
+                      icon={<FiTrash2 />}
+                      variant="ghost"
+                      colorScheme="red"
+                      size="sm"
+                      onClick={() => handleDelete(payment)}
+                    />
+                  </Tooltip>
+                )}
+              </HStack>
+            </Flex>
+          </Box>
+        ))}
       </VStack>
     );
-  }
+  };
 
-  return (
-    <VStack spacing={4} align="stretch" w="full">
-      {payments.map((payment) => (
-        <Box
-          key={payment._id.toString()}
-          p={4}
-          bg={bgColor}
-          borderWidth="1px"
-          borderColor={borderColor}
-          borderRadius="lg"
-          transition="all 0.2s"
-          _hover={{
-            bg: hoverBg,
-            transform: 'translateY(-2px)',
-            boxShadow: 'sm',
-          }}
-        >
-          <Flex justify="space-between" align="center" gap={4}>
-            <Box flex="1">
-              <PaymentCard payment={payment} />
-            </Box>
-
-            <HStack spacing={2}>
-              <Tooltip label="Details anzeigen">
-                <IconButton
-                  aria-label="Zahlung anzeigen"
-                  icon={<FiEye />}
-                  variant="ghost"
-                  colorScheme="purple"
-                  size="sm"
-                  onClick={() => setSelectedPayment(payment)}
-                />
-              </Tooltip>
-              
-              {onEdit && (
-                <Tooltip label="Bearbeiten">
-                  <IconButton
-                    aria-label="Zahlung bearbeiten"
-                    icon={<FiEdit2 />}
-                    variant="ghost"
-                    colorScheme="purple"
-                    size="sm"
-                    onClick={() => onEdit(payment)}
-                  />
-                </Tooltip>
-              )}
-
-              {onDownload && (
-                <Tooltip label="PDF herunterladen">
-                  <IconButton
-                    aria-label="PDF herunterladen"
-                    icon={<FiDownload />}
-                    variant="ghost"
-                    colorScheme="purple"
-                    size="sm"
-                    onClick={() => onDownload(payment)}
-                  />
-                </Tooltip>
-              )}
-              
-              {onDelete && (
-                <Tooltip label="Löschen">
-                  <IconButton
-                    aria-label="Zahlung löschen"
-                    icon={<FiTrash2 />}
-                    variant="ghost"
-                    colorScheme="red"
-                    size="sm"
-                    onClick={() => handleDelete(payment)}
-                  />
-                </Tooltip>
-              )}
-            </HStack>
-          </Flex>
-        </Box>
-      ))}
-    </VStack>
-  );
+  return renderContent();
 }

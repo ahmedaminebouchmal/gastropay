@@ -21,23 +21,29 @@ interface PaymentDetailsProps {
   onOpenStripeCheckout?: () => void;
 }
 
+const InfoItem = ({ icon, label, value, iconColor, mutedColor }: { 
+  icon: any; 
+  label: string; 
+  value: string | number;
+  iconColor: string;
+  mutedColor: string;
+}) => (
+  <HStack spacing={4}>
+    <Icon as={icon} w={5} h={5} color={iconColor} />
+    <VStack align="start" spacing={0}>
+      <Text fontSize="sm" color={mutedColor}>
+        {label}
+      </Text>
+      <Text fontWeight="medium">{value}</Text>
+    </VStack>
+  </HStack>
+);
+
 export function PaymentDetails({ payment, onGeneratePDF, onOpenStripeCheckout }: PaymentDetailsProps) {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const iconColor = useColorModeValue('purple.500', 'purple.300');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
-
-  const InfoItem = ({ icon, label, value }: { icon: any; label: string; value: string | number }) => (
-    <HStack spacing={4}>
-      <Icon as={icon} w={5} h={5} color={iconColor} />
-      <VStack align="start" spacing={0}>
-        <Text fontSize="sm" color={mutedColor}>
-          {label}
-        </Text>
-        <Text fontWeight="medium">{value}</Text>
-      </VStack>
-    </HStack>
-  );
 
   const getStatusColor = (status: PaymentStatus) => {
     switch (status) {
@@ -100,12 +106,16 @@ export function PaymentDetails({ payment, onGeneratePDF, onOpenStripeCheckout }:
               icon={FiCreditCard}
               label="Betrag"
               value={formatAmount(payment.amount, payment.currency)}
+              iconColor={iconColor}
+              mutedColor={mutedColor}
             />
             {payment.dueDate && (
               <InfoItem
                 icon={FiCalendar}
                 label="Fälligkeitsdatum"
                 value={formattedDate}
+                iconColor={iconColor}
+                mutedColor={mutedColor}
               />
             )}
           </SimpleGrid>
@@ -132,12 +142,16 @@ export function PaymentDetails({ payment, onGeneratePDF, onOpenStripeCheckout }:
                 icon={FiUser}
                 label="Name"
                 value={payment.clientId.fullName}
+                iconColor={iconColor}
+                mutedColor={mutedColor}
               />
               {payment.clientId.company && (
                 <InfoItem
                   icon={FiFileText}
                   label="Unternehmen"
                   value={payment.clientId.company}
+                  iconColor={iconColor}
+                  mutedColor={mutedColor}
                 />
               )}
             </SimpleGrid>

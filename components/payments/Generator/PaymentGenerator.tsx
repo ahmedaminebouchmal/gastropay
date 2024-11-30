@@ -90,19 +90,15 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
 
   // State hooks
   const [formData, setFormData] = useState<PaymentFormData>({
-    amount: payment?.amount?.toString() || '',
-    currency: payment?.currency || 'EUR',
-    dueDate: payment?.dueDate ? new Date(payment.dueDate).toISOString().split('T')[0] : '',
-    clientId: payment?.clientId ? getObjectId(
-      typeof payment.clientId === 'object' && '_id' in payment.clientId 
-        ? payment.clientId._id 
-        : payment.clientId
-    ) : '',
-    description: payment?.description || '',
-    reference: payment?.reference || generateReference(),
-    recipientName: payment?.recipientName || '',
-    recipientIBAN: payment?.recipientIBAN || '',
-    status: payment?.status || PaymentStatus.PENDING
+    amount: '',
+    currency: 'EUR',
+    dueDate: '',
+    clientId: '',
+    description: '',
+    reference: generateReference(),
+    recipientName: '',
+    recipientIBAN: '',
+    status: PaymentStatus.PENDING
   });
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -112,25 +108,30 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load client data when payment prop changes
+  // Initialize form data from payment prop
   useEffect(() => {
-    const loadPaymentData = async () => {
+    if (payment) {
       setFormData({
-        amount: payment?.amount?.toString() || '',
-        currency: payment?.currency || 'EUR',
-        dueDate: payment?.dueDate ? new Date(payment.dueDate).toISOString().split('T')[0] : '',
-        clientId: payment?.clientId ? getObjectId(
+        amount: payment.amount?.toString() || '',
+        currency: payment.currency || 'EUR',
+        dueDate: payment.dueDate ? new Date(payment.dueDate).toISOString().split('T')[0] : '',
+        clientId: payment.clientId ? getObjectId(
           typeof payment.clientId === 'object' && '_id' in payment.clientId 
             ? payment.clientId._id 
             : payment.clientId
         ) : '',
-        description: payment?.description || '',
-        reference: payment?.reference || generateReference(),
-        recipientName: payment?.recipientName || '',
-        recipientIBAN: payment?.recipientIBAN || '',
-        status: payment?.status || PaymentStatus.PENDING
+        description: payment.description || '',
+        reference: payment.reference || generateReference(),
+        recipientName: payment.recipientName || '',
+        recipientIBAN: payment.recipientIBAN || '',
+        status: payment.status || PaymentStatus.PENDING
       });
+    }
+  }, [payment]);
 
+  // Load client data when payment prop changes
+  useEffect(() => {
+    const loadPaymentData = async () => {
       // If payment has client data, set it as selected client
       if (payment?.clientId && typeof payment.clientId === 'object' && '_id' in payment.clientId) {
         setSelectedClient(payment.clientId);
