@@ -27,11 +27,6 @@ interface PaymentListProps {
   onStripeCheckout?: (payment: Payment) => void;
 }
 
-// Type guard to check if clientId is a Client object
-function isClient(clientId: Schema.Types.ObjectId | Client): clientId is Client {
-  return (clientId as Client).fullName !== undefined;
-}
-
 function PaymentCard({ payment }: { payment: Payment }) {
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const iconColor = useColorModeValue('purple.500', 'purple.300');
@@ -72,13 +67,31 @@ function PaymentCard({ payment }: { payment: Payment }) {
   }, [payment.dueDate]);
 
   const clientInfo = useMemo(() => {
-    if (payment.clientId && isClient(payment.clientId)) {
-      return {
-        name: payment.clientId.fullName,
-        company: payment.clientId.company
-      };
+    try {
+      // Safely check if clientId exists and is an object
+      if (!payment.clientId || typeof payment.clientId !== 'object') {
+        return null;
+      }
+
+      // Safely check for client properties
+      const client = payment.clientId as any;
+      if (!client || typeof client !== 'object') {
+        return null;
+      }
+
+      // Only return data if we have valid properties
+      if (typeof client.fullName === 'string') {
+        return {
+          name: client.fullName,
+          company: client.company || undefined
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error parsing client info:', error);
+      return null;
     }
-    return null;
   }, [payment.clientId]);
 
   return (
