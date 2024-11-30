@@ -33,6 +33,7 @@
     "framer-motion": "^10.18.0",
     "html2canvas": "^1.4.1",
     "iconv-lite": "^0.6.3",
+    "jose": "^5.9.6",
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^2.5.2",
     "mongoose": "^8.8.3",
