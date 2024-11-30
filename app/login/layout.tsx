@@ -1,7 +1,6 @@
 'use client';
 
-import { Box, useColorModeValue, Tooltip, Flex } from '@chakra-ui/react';
-import ThemeToggle from '@/components/shared/ThemeToggle';
+import { Box, useColorModeValue, Flex } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 
 const MotionBox = motion(Box);
@@ -23,18 +22,6 @@ export default function LoginLayout({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Theme Toggle Button */}
-      <Box 
-        position="absolute" 
-        top={0} 
-        right={0} 
-        p={4}
-        bg="gray.900"
-        borderBottomLeftRadius="md"
-      >
-        <ThemeToggle />
-      </Box>
-
       {/* Main Content */}
       <MotionFlex 
         minH="100vh" 

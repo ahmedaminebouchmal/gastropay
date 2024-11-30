@@ -124,7 +124,12 @@ export default function LoginPage() {
         position="relative"
       >
         {/* Theme Toggle */}
-        <Box position="absolute" top={4} right={4}>
+        <Box 
+          position="absolute" 
+          top={4} 
+          right={4}
+          color={useColorModeValue('gray.800', 'white')}
+        >
           <Tooltip label={useColorModeValue('Dunkelmodus aktivieren', 'Hellmodus aktivieren')}>
             <Box>
               <ThemeToggle />

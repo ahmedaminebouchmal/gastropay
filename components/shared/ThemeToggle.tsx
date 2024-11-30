@@ -12,7 +12,7 @@ export default function ThemeToggle() {
       icon={colorMode === 'light' ? <FiMoon /> : <FiSun />}
       onClick={toggleColorMode}
       variant="ghost"
-      color="white"
+      color="inherit"
       _hover={{ bg: 'whiteAlpha.200' }}
     />
   );
