@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -35,9 +35,20 @@ import { Schema } from 'mongoose';
 
 type ClientIdType = string | { _id: string } | undefined;
 
-const getObjectId = (id: Schema.Types.ObjectId | string): string => {
+const generateReference = () => {
+  const prefix = 'INV';
+  const timestamp = Date.now().toString().slice(-6);
+  const random = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return `${prefix}-${timestamp}-${random}`;
+};
+
+const getObjectId = (id: any): string => {
   if (typeof id === 'string') return id;
-  return id.toString();
+  if (typeof id === 'object' && id !== null) {
+    if ('toString' in id) return id.toString();
+    if ('_id' in id) return getObjectId(id._id);
+  }
+  return '';
 };
 
 interface PaymentData {
@@ -70,10 +81,6 @@ interface PaymentFormData {
   status: PaymentStatus;
 }
 
-function generateReference() {
-  return `REF${Date.now()}${Math.floor(Math.random() * 1000)}`;
-}
-
 export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
   onClose,
   onPaymentCreated,
@@ -89,7 +96,7 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
   const inputBorderColor = useColorModeValue('gray.300', 'gray.600');
 
   // State hooks
-  const [formData, setFormData] = useState<PaymentFormData>({
+  const [formData, setFormData] = useState<PaymentFormData>(useMemo(() => ({
     amount: '',
     currency: 'EUR',
     dueDate: '',
@@ -99,7 +106,7 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
     recipientName: '',
     recipientIBAN: '',
     status: PaymentStatus.PENDING
-  });
+  }), []));
 
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -108,26 +115,30 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const currentFormData = useMemo(() => {
+    if (!payment) return formData;
+    
+    return {
+      amount: payment.amount?.toString() || '',
+      currency: payment.currency || 'EUR',
+      dueDate: payment.dueDate ? new Date(payment.dueDate).toISOString().split('T')[0] : '',
+      clientId: payment.clientId ? getObjectId(
+        typeof payment.clientId === 'object' && '_id' in payment.clientId 
+          ? payment.clientId._id 
+          : payment.clientId
+      ) : '',
+      description: payment.description || '',
+      reference: payment.reference || generateReference(),
+      recipientName: payment.recipientName || '',
+      recipientIBAN: payment.recipientIBAN || '',
+      status: payment.status || PaymentStatus.PENDING
+    };
+  }, [payment, formData]);
+
   // Initialize form data from payment prop
   useEffect(() => {
-    if (payment) {
-      setFormData({
-        amount: payment.amount?.toString() || '',
-        currency: payment.currency || 'EUR',
-        dueDate: payment.dueDate ? new Date(payment.dueDate).toISOString().split('T')[0] : '',
-        clientId: payment.clientId ? getObjectId(
-          typeof payment.clientId === 'object' && '_id' in payment.clientId 
-            ? payment.clientId._id 
-            : payment.clientId
-        ) : '',
-        description: payment.description || '',
-        reference: payment.reference || generateReference(),
-        recipientName: payment.recipientName || '',
-        recipientIBAN: payment.recipientIBAN || '',
-        status: payment.status || PaymentStatus.PENDING
-      });
-    }
-  }, [payment]);
+    setFormData(currentFormData);
+  }, [currentFormData]);
 
   // Load client data when payment prop changes
   useEffect(() => {

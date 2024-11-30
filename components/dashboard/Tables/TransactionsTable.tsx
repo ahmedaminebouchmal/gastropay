@@ -10,6 +10,7 @@ import {
   useColorModeValue,
   Text,
 } from '@chakra-ui/react';
+import { useMemo } from 'react';
 import { translations } from '@/translations/de';
 import { PaymentStatus } from '@/types/payment';
 
@@ -25,6 +26,34 @@ interface TransactionsTableProps {
   transactions: Transaction[];
 }
 
+const getStatusColor = (status: PaymentStatus) => {
+  switch (status) {
+    case PaymentStatus.PAID:
+    case PaymentStatus.CONFIRMED:
+      return 'green';
+    case PaymentStatus.PENDING:
+      return 'yellow';
+    case PaymentStatus.DECLINED:
+      return 'red';
+    default:
+      return 'gray';
+  }
+};
+
+const getStatusText = (status: PaymentStatus) => {
+  switch (status) {
+    case PaymentStatus.PAID:
+    case PaymentStatus.CONFIRMED:
+      return translations.dashboard.completed;
+    case PaymentStatus.PENDING:
+      return translations.dashboard.pending;
+    case PaymentStatus.DECLINED:
+      return translations.dashboard.failed;
+    default:
+      return status;
+  }
+};
+
 export const TransactionsTable: React.FC<TransactionsTableProps> = ({ transactions }) => {
   const textColor = useColorModeValue('gray.700', 'white');
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -32,33 +61,14 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ transactio
   const headerColor = useColorModeValue('gray.600', 'gray.400');
   const hoverBgColor = useColorModeValue('gray.50', 'gray.700');
 
-  const getStatusColor = (status: PaymentStatus) => {
-    switch (status) {
-      case PaymentStatus.PAID:
-      case PaymentStatus.CONFIRMED:
-        return 'green';
-      case PaymentStatus.PENDING:
-        return 'yellow';
-      case PaymentStatus.DECLINED:
-        return 'red';
-      default:
-        return 'gray';
-    }
-  };
-
-  const getStatusText = (status: PaymentStatus) => {
-    switch (status) {
-      case PaymentStatus.PAID:
-      case PaymentStatus.CONFIRMED:
-        return translations.dashboard.completed;
-      case PaymentStatus.PENDING:
-        return translations.dashboard.pending;
-      case PaymentStatus.DECLINED:
-        return translations.dashboard.failed;
-      default:
-        return status;
-    }
-  };
+  const transactionRows = useMemo(() => 
+    transactions.map((transaction) => ({
+      ...transaction,
+      statusColor: getStatusColor(transaction.status),
+      statusText: getStatusText(transaction.status)
+    })),
+    [transactions]
+  );
 
   return (
     <Box
@@ -81,7 +91,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ transactio
           </Tr>
         </Thead>
         <Tbody>
-          {transactions.map((transaction) => (
+          {transactionRows.map((transaction) => (
             <Tr 
               key={transaction.id}
               _hover={{ bg: hoverBgColor }}
@@ -91,13 +101,13 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ transactio
               <Td width="25%" color={textColor}>{transaction.amount}</Td>
               <Td width="20%">
                 <Badge
-                  colorScheme={getStatusColor(transaction.status)}
+                  colorScheme={transaction.statusColor}
                   px={2}
                   py={1}
                   rounded="md"
                   fontSize="sm"
                 >
-                  {getStatusText(transaction.status)}
+                  {transaction.statusText}
                 </Badge>
               </Td>
               <Td width="25%" color={textColor}>{transaction.date}</Td>

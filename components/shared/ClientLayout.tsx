@@ -4,7 +4,7 @@ import { Flex, Box } from "@chakra-ui/react";
 import Navbar from "./Navbar";
 import { Footer } from "./Footer";
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 const PUBLIC_ROUTES = ['/login', '/payment'];
 
@@ -13,16 +13,19 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const [mounted, setMounted] = useState(false);
   const [showNav, setShowNav] = useState(false);
 
+  const isPublicRoute = useMemo(() => 
+    PUBLIC_ROUTES.some(route => pathname?.startsWith(route)),
+    [pathname]
+  );
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
     if (!mounted) return;
-    
-    const isPublicRoute = PUBLIC_ROUTES.some(route => pathname?.startsWith(route));
     setShowNav(!isPublicRoute);
-  }, [pathname, mounted]);
+  }, [mounted, isPublicRoute]);
 
   // Prevent flash of navbar on public routes
   if (!mounted) {

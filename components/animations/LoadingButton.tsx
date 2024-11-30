@@ -1,12 +1,13 @@
 import { Button, ButtonProps } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { translations } from '@/translations/de';
 
 const MotionButton = motion(Button);
 
 interface LoadingButtonProps extends ButtonProps {
-  isLoading: boolean;
+  isLoading?: boolean;
+  children: React.ReactNode;
 }
 
 export default function LoadingButton({ isLoading, children, ...props }: LoadingButtonProps) {
@@ -22,7 +23,7 @@ export default function LoadingButton({ isLoading, children, ...props }: Loading
     }
   }, [isLoading]);
 
-  const buttonVariants = {
+  const buttonVariants = useMemo(() => ({
     idle: {
       scale: 1,
       backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
@@ -39,7 +40,16 @@ export default function LoadingButton({ isLoading, children, ...props }: Loading
     tap: {
       scale: 0.95,
     },
-  };
+  }), []);
+
+  const buttonTransition = useMemo(() => ({
+    duration: 0.3,
+    backgroundPosition: {
+      duration: 3,
+      repeat: Infinity,
+      ease: "linear",
+    },
+  }), []);
 
   return (
     <MotionButton
@@ -49,14 +59,7 @@ export default function LoadingButton({ isLoading, children, ...props }: Loading
       whileHover="hover"
       whileTap="tap"
       variants={buttonVariants}
-      transition={{
-        duration: 0.3,
-        backgroundPosition: {
-          duration: 3,
-          repeat: Infinity,
-          ease: "linear",
-        },
-      }}
+      transition={buttonTransition}
       bgGradient="linear(to-r, purple.500, pink.500, purple.500)"
       backgroundSize="200% 100%"
       color="white"

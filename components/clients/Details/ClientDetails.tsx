@@ -15,6 +15,7 @@ import {
   Icon,
   Button,
 } from '@chakra-ui/react';
+import { useMemo } from 'react';
 import { FiMail, FiPhone, FiMapPin, FiHome, FiFileText } from 'react-icons/fi';
 import { TransactionsTable } from '../../dashboard/Tables/TransactionsTable';
 import { Client } from '@/types';
@@ -33,15 +34,16 @@ interface ClientDetailsProps {
   transactions?: Transaction[];
 }
 
-const InfoItem = ({ icon, label, value, iconColor }: { icon: any; label: string; value: string; iconColor: string }) => (
-  <HStack spacing={4}>
-    <Icon as={icon} w={5} h={5} color={iconColor} />
-    <VStack align="start" spacing={0}>
-      <Text fontSize="sm" color={useColorModeValue('gray.600', 'gray.400')}>
-        {label}
-      </Text>
-      <Text fontWeight="medium">{value}</Text>
-    </VStack>
+const InfoItem = ({ icon, label, value, iconColor }: { 
+  icon: any; 
+  label: string; 
+  value: string | number;
+  iconColor: string;
+}) => (
+  <HStack spacing={2}>
+    <Icon as={icon} w={4} h={4} color={iconColor} />
+    <Text fontWeight="medium">{label}:</Text>
+    <Text>{value}</Text>
   </HStack>
 );
 
@@ -50,11 +52,23 @@ export function ClientDetails({ client, transactions = [] }: ClientDetailsProps)
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const iconColor = useColorModeValue('purple.500', 'purple.300');
 
+  const clientInfoItems = useMemo(() => [
+    { icon: FiMail, label: "Email", value: client.email },
+    { icon: FiPhone, label: "Telefon", value: client.phoneNumber },
+    { icon: FiMapPin, label: "Adresse", value: client.address }
+  ], [client.email, client.phoneNumber, client.address]);
+
   const renderClientInfo = () => (
     <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-      <InfoItem icon={FiMail} label="Email" value={client.email} iconColor={iconColor} />
-      <InfoItem icon={FiPhone} label="Telefon" value={client.phoneNumber} iconColor={iconColor} />
-      <InfoItem icon={FiMapPin} label="Adresse" value={client.address} iconColor={iconColor} />
+      {clientInfoItems.map((item, index) => (
+        <InfoItem
+          key={index}
+          icon={item.icon}
+          label={item.label}
+          value={item.value}
+          iconColor={iconColor}
+        />
+      ))}
     </SimpleGrid>
   );
 

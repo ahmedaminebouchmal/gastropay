@@ -21,21 +21,50 @@ interface PaymentDetailsProps {
   onOpenStripeCheckout?: () => void;
 }
 
-const InfoItem = ({ icon, label, value, iconColor, mutedColor }: { 
-  icon: any; 
-  label: string; 
+interface InfoItemProps {
+  icon: any;
+  label: string;
   value: string | number;
   iconColor: string;
-  mutedColor: string;
-}) => (
-  <HStack spacing={4}>
-    <Icon as={icon} w={5} h={5} color={iconColor} />
-    <VStack align="start" spacing={0}>
-      <Text fontSize="sm" color={mutedColor}>
-        {label}
-      </Text>
-      <Text fontWeight="medium">{value}</Text>
-    </VStack>
+}
+
+const formatDate = (date: Date | string | undefined) => {
+  if (!date) return '';
+  const dateObj = date instanceof Date ? date : new Date(date);
+  return dateObj.toLocaleDateString('de-DE', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+const formatAmount = (amount: number, currency: string) => {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: currency,
+  }).format(amount);
+};
+
+const getStatusColor = (status: PaymentStatus) => {
+  switch (status) {
+    case PaymentStatus.PAID:
+      return 'green';
+    case PaymentStatus.PENDING:
+      return 'yellow';
+    case PaymentStatus.CONFIRMED:
+      return 'blue';
+    case PaymentStatus.DECLINED:
+      return 'red';
+    default:
+      return 'gray';
+  }
+};
+
+const InfoItem = ({ icon, label, value, iconColor }: InfoItemProps) => (
+  <HStack spacing={2}>
+    <Icon as={icon} w={4} h={4} color={iconColor} />
+    <Text fontWeight="medium">{label}:</Text>
+    <Text>{value}</Text>
   </HStack>
 );
 
@@ -45,40 +74,27 @@ export function PaymentDetails({ payment, onGeneratePDF, onOpenStripeCheckout }:
   const iconColor = useColorModeValue('purple.500', 'purple.300');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
 
-  const getStatusColor = (status: PaymentStatus) => {
-    switch (status) {
-      case PaymentStatus.PAID:
-        return 'green';
-      case PaymentStatus.PENDING:
-        return 'yellow';
-      case PaymentStatus.CONFIRMED:
-        return 'blue';
-      case PaymentStatus.DECLINED:
-        return 'red';
-      default:
-        return 'gray';
+  const formattedDueDate = useMemo(() => 
+    payment?.dueDate ? formatDate(payment.dueDate) : '', 
+    [payment?.dueDate]
+  );
+
+  const formattedAmount = useMemo(() => 
+    payment ? formatAmount(payment.amount, payment.currency) : '', 
+    [payment?.amount, payment?.currency]
+  );
+
+  const clientInfo = useMemo(() => {
+    if (!payment?.clientId || typeof payment.clientId !== 'object') {
+      return null;
     }
-  };
 
-  const formatAmount = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: currency,
-    }).format(amount);
-  };
-
-  const formatDate = (date: Date | string) => {
-    const dateObj = date instanceof Date ? date : new Date(date);
-    return dateObj.toLocaleDateString('de-DE', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const formattedDate = useMemo(() => {
-    return payment.dueDate ? formatDate(payment.dueDate) : '';
-  }, [payment.dueDate]);
+    const client = payment.clientId as any;
+    return client && typeof client === 'object' ? {
+      name: client.fullName,
+      company: client.company || undefined
+    } : null;
+  }, [payment?.clientId]);
 
   if (!payment) {
     return (
@@ -105,17 +121,15 @@ export function PaymentDetails({ payment, onGeneratePDF, onOpenStripeCheckout }:
             <InfoItem
               icon={FiCreditCard}
               label="Betrag"
-              value={formatAmount(payment.amount, payment.currency)}
+              value={formattedAmount}
               iconColor={iconColor}
-              mutedColor={mutedColor}
             />
             {payment.dueDate && (
               <InfoItem
                 icon={FiCalendar}
                 label="Fälligkeitsdatum"
-                value={formattedDate}
+                value={formattedDueDate}
                 iconColor={iconColor}
-                mutedColor={mutedColor}
               />
             )}
           </SimpleGrid>
@@ -134,24 +148,22 @@ export function PaymentDetails({ payment, onGeneratePDF, onOpenStripeCheckout }:
         <Divider />
 
         {/* Client Information */}
-        {payment.clientId && typeof payment.clientId === 'object' && '_id' in payment.clientId && (
+        {clientInfo && (
           <VStack align="start" spacing={4}>
             <Heading size="sm">Kundeninformationen</Heading>
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} width="full">
               <InfoItem
                 icon={FiUser}
                 label="Name"
-                value={payment.clientId.fullName}
+                value={clientInfo.name}
                 iconColor={iconColor}
-                mutedColor={mutedColor}
               />
-              {payment.clientId.company && (
+              {clientInfo.company && (
                 <InfoItem
                   icon={FiFileText}
                   label="Unternehmen"
-                  value={payment.clientId.company}
+                  value={clientInfo.company}
                   iconColor={iconColor}
-                  mutedColor={mutedColor}
                 />
               )}
             </SimpleGrid>

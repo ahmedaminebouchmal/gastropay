@@ -27,72 +27,61 @@ interface PaymentListProps {
   onStripeCheckout?: (payment: Payment) => void;
 }
 
+const formatDate = (date: Date | string) => {
+  if (!date) return '';
+  const dateObj = date instanceof Date ? date : new Date(date);
+  return dateObj.toLocaleDateString('de-DE', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+const formatAmount = (amount: number, currency: string) => {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: currency,
+  }).format(amount);
+};
+
+const getStatusColor = (status: PaymentStatus) => {
+  switch (status) {
+    case PaymentStatus.PAID:
+      return 'green';
+    case PaymentStatus.PENDING:
+      return 'yellow';
+    case PaymentStatus.CONFIRMED:
+      return 'blue';
+    case PaymentStatus.DECLINED:
+      return 'red';
+    default:
+      return 'gray';
+  }
+};
+
 function PaymentCard({ payment }: { payment: Payment }) {
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const iconColor = useColorModeValue('purple.500', 'purple.300');
 
-  const getStatusColor = (status: PaymentStatus) => {
-    switch (status) {
-      case PaymentStatus.PAID:
-        return 'green';
-      case PaymentStatus.PENDING:
-        return 'yellow';
-      case PaymentStatus.CONFIRMED:
-        return 'blue';
-      case PaymentStatus.DECLINED:
-        return 'red';
-      default:
-        return 'gray';
-    }
-  };
-
-  const formatAmount = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: currency,
-    }).format(amount);
-  };
-
-  const formatDate = (date: Date | string) => {
-    const dateObj = date instanceof Date ? date : new Date(date);
-    return dateObj.toLocaleDateString('de-DE', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const formattedDate = useMemo(() => {
-    return payment.dueDate ? formatDate(payment.dueDate) : '';
-  }, [payment.dueDate]);
+  const formattedDate = useMemo(() => (
+    payment?.dueDate ? formatDate(payment.dueDate) : ''
+  ), [payment?.dueDate]);
 
   const clientInfo = useMemo(() => {
-    try {
-      // Safely check if clientId exists and is an object
-      if (!payment.clientId || typeof payment.clientId !== 'object') {
-        return null;
-      }
-
-      // Safely check for client properties
-      const client = payment.clientId as any;
-      if (!client || typeof client !== 'object') {
-        return null;
-      }
-
-      // Only return data if we have valid properties
-      if (typeof client.fullName === 'string') {
-        return {
-          name: client.fullName,
-          company: client.company || undefined
-        };
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Error parsing client info:', error);
+    if (!payment?.clientId || typeof payment.clientId !== 'object') {
       return null;
     }
-  }, [payment.clientId]);
+
+    const client = payment.clientId as any;
+    if (!client || typeof client !== 'object') {
+      return null;
+    }
+
+    return typeof client.fullName === 'string' ? {
+      name: client.fullName,
+      company: client.company || undefined
+    } : null;
+  }, [payment?.clientId]);
 
   return (
     <VStack align="start" spacing={2} w="full">

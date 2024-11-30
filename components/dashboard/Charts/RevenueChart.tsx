@@ -14,6 +14,7 @@ import {
   ScaleOptions,
   CartesianScaleOptions
 } from 'chart.js';
+import { useMemo } from 'react';
 
 ChartJS.register(
   CategoryScale,
@@ -49,6 +50,15 @@ interface RevenueChartProps {
   };
 }
 
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+    notation: 'compact',
+    maximumFractionDigits: 1
+  }).format(value);
+};
+
 export function RevenueChart({ data }: RevenueChartProps) {
   const gridColor = useColorModeValue('rgba(0,0,0,0.06)', 'rgba(255,255,255,0.06)');
   const textColor = useColorModeValue('rgba(0,0,0,0.7)', 'rgba(255,255,255,0.7)');
@@ -57,7 +67,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
   const tooltipBodyColor = useColorModeValue('#1A202C', '#FFFFFF');
   const tooltipBorderColor = useColorModeValue('rgba(0,0,0,0.1)', 'rgba(255,255,255,0.1)');
 
-  const options: ChartOptions<'line'> = {
+  const options = useMemo<ChartOptions<'line'>>(() => ({
     responsive: true,
     plugins: {
       legend: {
@@ -84,10 +94,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
               label += ': ';
             }
             if (context.parsed.y !== null) {
-              label += new Intl.NumberFormat('de-DE', {
-                style: 'currency',
-                currency: 'EUR'
-              }).format(context.parsed.y);
+              label += formatCurrency(context.parsed.y);
             }
             return label;
           }
@@ -110,12 +117,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
           color: textColor,
           padding: 10,
           callback: function(value: any) {
-            return new Intl.NumberFormat('de-DE', {
-              style: 'currency',
-              currency: 'EUR',
-              notation: 'compact',
-              maximumFractionDigits: 1
-            }).format(value);
+            return formatCurrency(value);
           }
         },
         border: {
@@ -145,7 +147,14 @@ export function RevenueChart({ data }: RevenueChartProps) {
         hitRadius: 8,
       }
     }
-  };
+  }), [
+    gridColor, 
+    textColor, 
+    tooltipBgColor, 
+    tooltipTitleColor, 
+    tooltipBodyColor, 
+    tooltipBorderColor
+  ]);
 
   return (
     <Box w="100%" h="100%" p={2}>
