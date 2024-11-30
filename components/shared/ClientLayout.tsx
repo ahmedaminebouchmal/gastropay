@@ -3,18 +3,25 @@
 import { Flex, Box } from "@chakra-ui/react";
 import Navbar from "./Navbar";
 import { Footer } from "./Footer";
+import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const isPublicRoute = pathname === '/login' || pathname?.startsWith('/payment/');
+  const pathname = usePathname();
+  const [showNav, setShowNav] = useState(false);
+
+  useEffect(() => {
+    const isPublicRoute = pathname === '/login' || pathname?.startsWith('/payment/');
+    setShowNav(!isPublicRoute);
+  }, [pathname]);
 
   return (
     <Flex direction="column" minH="100vh">
-      {!isPublicRoute && <Navbar />}
+      {showNav && <Navbar />}
       <Box flex="1">
         {children}
       </Box>
-      {!isPublicRoute && <Footer />}
+      {showNav && <Footer />}
     </Flex>
   );
 }
