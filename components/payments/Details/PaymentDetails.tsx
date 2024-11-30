@@ -74,15 +74,15 @@ export function PaymentDetails({ payment, onGeneratePDF, onOpenStripeCheckout }:
   const iconColor = useColorModeValue('purple.500', 'purple.300');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
 
-  const formattedDueDate = useMemo(() => 
-    payment?.dueDate ? formatDate(payment.dueDate) : '', 
-    [payment?.dueDate]
-  );
+  const formattedDueDate = useMemo(() => {
+    if (!payment?.dueDate) return '';
+    return formatDate(payment.dueDate);
+  }, [payment?.dueDate]);
 
-  const formattedAmount = useMemo(() => 
-    payment ? formatAmount(payment.amount, payment.currency) : '', 
-    [payment?.amount, payment?.currency]
-  );
+  const formattedAmount = useMemo(() => {
+    if (!payment) return '';
+    return formatAmount(payment.amount, payment.currency);
+  }, [payment?.amount, payment?.currency]);
 
   const clientInfo = useMemo(() => {
     if (!payment?.clientId || typeof payment.clientId !== 'object') {

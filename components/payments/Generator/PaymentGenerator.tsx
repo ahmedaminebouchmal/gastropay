@@ -96,7 +96,7 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
   const inputBorderColor = useColorModeValue('gray.300', 'gray.600');
 
   // State hooks
-  const [formData, setFormData] = useState<PaymentFormData>(useMemo(() => ({
+  const initialFormData = useMemo(() => ({
     amount: '',
     currency: 'EUR',
     dueDate: '',
@@ -106,7 +106,9 @@ export const PaymentGenerator: React.FC<PaymentGeneratorProps> = ({
     recipientName: '',
     recipientIBAN: '',
     status: PaymentStatus.PENDING
-  }), []));
+  }), []);
+
+  const [formData, setFormData] = useState<PaymentFormData>(initialFormData);
 
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);

@@ -61,14 +61,14 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ transactio
   const headerColor = useColorModeValue('gray.600', 'gray.400');
   const hoverBgColor = useColorModeValue('gray.50', 'gray.700');
 
-  const transactionRows = useMemo(() => 
-    transactions.map((transaction) => ({
+  const transactionRows = useMemo(() => {
+    if (!transactions) return [];
+    return transactions.map((transaction) => ({
       ...transaction,
       statusColor: getStatusColor(transaction.status),
       statusText: getStatusText(transaction.status)
-    })),
-    [transactions]
-  );
+    }));
+  }, [transactions]);
 
   return (
     <Box
