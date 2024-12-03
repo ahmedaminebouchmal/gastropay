@@ -16,7 +16,7 @@ import { FiEdit2, FiTrash2, FiEye, FiDownload, FiCreditCard, FiArrowLeft, FiExte
 import { Payment, PaymentStatus } from '@/types/payment';
 import { Client } from '@/types/client';
 import { PaymentDetails } from '../Details/PaymentDetails';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 
 interface PaymentListProps {
   payments: Payment[];
@@ -125,12 +125,14 @@ function PaymentCard({ payment }: { payment: Payment }) {
 }
 
 export function PaymentList({ payments, onEdit, onDelete, onDownload, onStripeCheckout }: PaymentListProps) {
+  // Define all hooks at the top level
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const hoverBg = useColorModeValue('gray.50', 'gray.700');
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
-  const handleDelete = async (payment: Payment) => {
+  // Memoized handlers
+  const handleDelete = useCallback(async (payment: Payment) => {
     try {
       const response = await fetch(`/api/payments/${payment._id}`, {
         method: 'DELETE',
@@ -144,38 +146,17 @@ export function PaymentList({ payments, onEdit, onDelete, onDownload, onStripeCh
     } catch (error) {
       console.error('Error deleting payment:', error);
     }
-  };
+  }, [onDelete]);
 
-  if (!payments || payments.length === 0) {
-    return (
-      <Box textAlign="center" py={8}>
-        <Text color="gray.500">Keine Zahlungen vorhanden</Text>
-      </Box>
-    );
-  }
+  const handleViewDetails = useCallback((payment: Payment) => {
+    setSelectedPayment(payment);
+  }, []);
 
-  if (selectedPayment) {
-    return (
-      <VStack spacing={4} align="stretch">
-        <HStack>
-          <Button
-            leftIcon={<FiArrowLeft />}
-            variant="ghost"
-            onClick={() => setSelectedPayment(null)}
-          >
-            Zurück zur Liste
-          </Button>
-        </HStack>
+  const handleBackToList = useCallback(() => {
+    setSelectedPayment(null);
+  }, []);
 
-        <PaymentDetails
-          payment={selectedPayment}
-          onGeneratePDF={() => onDownload?.(selectedPayment)}
-          onOpenStripeCheckout={() => onStripeCheckout?.(selectedPayment)}
-        />
-      </VStack>
-    );
-  }
-
+  // Memoized payment cards
   const paymentCards = useMemo(() => 
     payments.map((payment) => (
       <Box
@@ -205,7 +186,10 @@ export function PaymentList({ payments, onEdit, onDelete, onDownload, onStripeCh
                 variant="ghost"
                 colorScheme="purple"
                 size="sm"
-                onClick={() => setSelectedPayment(payment)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewDetails(payment);
+                }}
               />
             </Tooltip>
             
@@ -251,12 +235,46 @@ export function PaymentList({ payments, onEdit, onDelete, onDownload, onStripeCh
         </Flex>
       </Box>
     )),
-    [payments, bgColor, borderColor, hoverBg, onEdit, onDelete, onDownload]
+    [payments, bgColor, borderColor, hoverBg, onEdit, onDelete, onDownload, handleDelete, handleViewDetails]
   );
 
-  return (
-    <VStack spacing={4} align="stretch" w="full">
-      {paymentCards}
-    </VStack>
-  );
+  // Render content based on state
+  let content;
+  if (!payments || payments.length === 0) {
+    content = (
+      <Box textAlign="center" py={8}>
+        <Text color="gray.500">Keine Zahlungen vorhanden</Text>
+      </Box>
+    );
+  } else if (selectedPayment) {
+    content = (
+      <VStack spacing={4} align="stretch" w="full">
+        <HStack>
+          <Button
+            leftIcon={<FiArrowLeft />}
+            variant="ghost"
+            onClick={handleBackToList}
+          >
+            Zurück zur Liste
+          </Button>
+        </HStack>
+
+        <Box w="full">
+          <PaymentDetails
+            payment={selectedPayment}
+            onGeneratePDF={() => onDownload?.(selectedPayment)}
+            onOpenStripeCheckout={() => onStripeCheckout?.(selectedPayment)}
+          />
+        </Box>
+      </VStack>
+    );
+  } else {
+    content = (
+      <VStack spacing={4} align="stretch" w="full">
+        {paymentCards}
+      </VStack>
+    );
+  }
+
+  return content;
 }

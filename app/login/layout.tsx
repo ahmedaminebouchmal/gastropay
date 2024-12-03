@@ -2,6 +2,7 @@
 
 import { Box, useColorModeValue, Flex } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import { Footer } from '@/components/shared/Footer';
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -33,6 +34,7 @@ export default function LoginLayout({
       >
         {children}
       </MotionFlex>
+      <Footer />
     </MotionBox>
   );
 }

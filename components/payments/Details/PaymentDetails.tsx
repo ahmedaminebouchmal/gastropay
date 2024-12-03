@@ -13,6 +13,7 @@ import {
 } from '@chakra-ui/react';
 import { FiCreditCard, FiCalendar, FiUser, FiFileText, FiDownload, FiExternalLink } from 'react-icons/fi';
 import { Payment, PaymentStatus } from '@/types/payment';
+import { Client } from '@/types/client';
 import { useMemo } from 'react';
 
 interface PaymentDetailsProps {
@@ -85,15 +86,18 @@ export function PaymentDetails({ payment, onGeneratePDF, onOpenStripeCheckout }:
   }, [payment?.amount, payment?.currency]);
 
   const clientInfo = useMemo(() => {
-    if (!payment?.clientId || typeof payment.clientId !== 'object') {
+    if (!payment?.clientId) return null;
+    
+    try {
+      const client = payment.clientId as Client;
+      return {
+        name: client.fullName || '',
+        company: client.company || ''
+      };
+    } catch (error) {
+      console.error('Error parsing client info:', error);
       return null;
     }
-
-    const client = payment.clientId as any;
-    return client && typeof client === 'object' ? {
-      name: client.fullName,
-      company: client.company || undefined
-    } : null;
   }, [payment?.clientId]);
 
   if (!payment) {
