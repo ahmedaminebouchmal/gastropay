@@ -180,8 +180,6 @@ Regular updates include:
 
 For technical support or business inquiries:
 - Email: bouchmalaabesp@gmail.com
-- Documentation: [Internal Link]
-- Issue Tracking: [Internal Link]
 
 ## 🚧 Future Roadmap
 
